@@ -2325,3 +2325,26 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
+1320984664 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+	<sdk.h>
+	<configurationpanel.h>
+	"ClangComplete.h"
+	<logmanager.h>
+	<editor_hooks.h>
+	<wxscintilla/include/wx/wxscintilla.h>
+	<clang-c/Index.h>
+	<cbeditor.h>
+	<cbstyledtextctrl.h>
+	<projectmanager.h>
+	<cbproject.h>
+	<compiler.h>
+	<compilerfactory.h>
+
+1320983665 /home/ethan/Programming/ClangComplete/ClangComplete.h
+	<wx/wxprec.h>
+	<wx/wx.h>
+	<cbplugin.h>
+	<codeblocks/logmanager.h>
+	<codeblocks/editor_hooks.h>
+	<clang-c/Index.h>
+

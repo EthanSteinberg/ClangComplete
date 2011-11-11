@@ -9,6 +9,10 @@
 #include <clang-c/Index.h>
 #include <cbeditor.h>
 #include <cbstyledtextctrl.h>
+#include <projectmanager.h>
+#include <cbproject.h>
+#include <compiler.h>
+#include <compilerfactory.h>
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
 namespace
@@ -40,6 +44,7 @@ ClangComplete::~ClangComplete()
 {
 }
 
+
 void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 {
 //
@@ -56,9 +61,9 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
     if (event.GetEventType() == wxEVT_SCI_CHARADDED)
     {
 
+        static wxChar lastKey = _T(' ');
         const wxChar ch = event.GetKey();
-
-        if (ch == '.')
+        if (ch == '.' || (ch == ':' && lastKey == ':'))
         {
             cbStyledTextCtrl* control  = editor->GetControl();
 
@@ -73,8 +78,18 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
             CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
 
+            if (!unitCreated)
+            {
+
+
+            const char** args = new const char*[1];
+            args[0] = "-I/usr/lib/clang/2.9/include";
             CXIndex index = clang_createIndex(0,0);
-            CXTranslationUnit unit = clang_createTranslationUnitFromSourceFile(index, buffer.data(), 0,(char**)"",1, &file);
+            unit = clang_parseTranslationUnit(index, buffer.data(),args,1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+            unitCreated = true;
+            }
+            else
+            int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
 
 
 
@@ -95,6 +110,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
             int a = foo->NumResults;
 
+
             for (int i = 0; i < a; i++)
             {
                 CXCompletionResult res = foo->Results[i];
@@ -113,7 +129,19 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
             control->AutoCompShow(pos-start,final );
            // Manager::Get()->GetLogManager()->Log(result);
 
+
+            ProjectBuildTarget *target = Manager::Get()->GetProjectManager()->GetActiveProject()->GetBuildTarget(0);
+            wxString test = target->GetCompilerID();
+            Compiler * comp = CompilerFactory::GetCompiler(test);
+
+            wxArrayString next = comp->GetCompilerSearchDirs(target);
+
+            wxString pray = GetStringFromArray(next, _(" "));
+
+            Manager::Get()->GetLogManager()->Log(pray);
+
         }
+        lastKey = ch;
     }
 
 
@@ -138,7 +166,7 @@ void ClangComplete::OnAttach()
     EditorHooks::HookFunctorBase* myhook = new EditorHooks::HookFunctor<ClangComplete>(this, &ClangComplete::OnStuff);
     hookId = EditorHooks::RegisterHook(myhook);
 
-
+    unitCreated = false;
 
 
 

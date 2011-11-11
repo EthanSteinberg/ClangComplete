@@ -21,10 +21,13 @@
 
 #include <codeblocks/logmanager.h>
 #include <codeblocks/editor_hooks.h>
+#include <clang-c/Index.h>
 class ClangComplete : public cbPlugin
 {
     public:
     int hookId;
+    CXTranslationUnit unit;
+    bool unitCreated;
         /** Constructor. */
         ClangComplete();
         /** Destructor. */
