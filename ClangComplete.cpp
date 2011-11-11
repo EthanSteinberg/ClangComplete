@@ -78,8 +78,40 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
             CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
 
+
+
+
             if (!unitCreated)
             {
+
+
+
+            ProjectFile* pf = editor->GetProjectFile();
+            ProjectBuildTarget *target = Manager::Get()->GetProjectManager()->GetActiveProject()->GetBuildTarget(0);
+            wxString test = target->GetCompilerID();
+            Compiler * comp = CompilerFactory::GetCompiler(test);
+
+            wxArrayString next = comp->GetCompilerSearchDirs(target);
+
+            wxString pray = GetStringFromArray(next, _(" "));
+
+            //Manager::Get()->GetLogManager()->Log(pray);
+
+
+
+
+
+            const pfDetails& pfd = pf->GetFileDetails(target);
+
+
+            wxString Object = (comp->GetSwitches().UseFlatObjects)?pfd.object_file_flat:pfd.object_file;
+
+            const CompilerTool &tool = comp->GetCompilerTool(ctCompileObjectCmd,_(".cpp"));
+            wxString tempCommand = _("$options $includes");
+            comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
+                                         pfd.dep_file);
+
+            Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
             const char** args = new const char*[1];
@@ -119,7 +151,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
                 const char* stu = clang_getCString(str2);
 
 
-                Manager::Get()->GetLogManager()->Log(wxString(stu,wxConvUTF8));
+                //Manager::Get()->GetLogManager()->Log(wxString(stu,wxConvUTF8));
                 items.Add(wxString(stu,wxConvUTF8));
             }
 
@@ -130,15 +162,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
            // Manager::Get()->GetLogManager()->Log(result);
 
 
-            ProjectBuildTarget *target = Manager::Get()->GetProjectManager()->GetActiveProject()->GetBuildTarget(0);
-            wxString test = target->GetCompilerID();
-            Compiler * comp = CompilerFactory::GetCompiler(test);
 
-            wxArrayString next = comp->GetCompilerSearchDirs(target);
-
-            wxString pray = GetStringFromArray(next, _(" "));
-
-            Manager::Get()->GetLogManager()->Log(pray);
 
         }
         lastKey = ch;
