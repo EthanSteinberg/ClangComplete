@@ -30,10 +30,6 @@ wxString generateCommandString()
     ProjectFile* pf = editor->GetProjectFile();
     cbProject *project = Manager::Get()->GetProjectManager()->GetActiveProject();
 
-
-
-    Manager::Get()->GetLogManager()->Log(project->GetNativeFilename());
-
     ProjectBuildTarget *target = project->GetBuildTarget(0);
     wxString test = target->GetCompilerID();
     Compiler * comp = CompilerFactory::GetCompiler(test);
@@ -104,16 +100,33 @@ void ClangComplete::InitializeTU()
     wxString name = editor->GetFilename();
     wxCharBuffer buffer = name.ToUTF8();
 
+
+
     wxString tempCommand = generateCommandString();
 
+    Manager::Get()->GetLogManager()->Log(name);
     Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
     int numOfTokens;
     const char**args = generateCommandLine(tempCommand,numOfTokens);
 
+    cbStyledTextCtrl* control  = editor->GetControl();
+
+
+    wxString text = control->GetText();
+    wxCharBuffer textBuf = text.ToUTF8();
+
+    int length = control->GetLength();
+
+    CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
+
+
     index = clang_createIndex(0,0);
-    unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, NULL,0, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+    unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
+    clang_disposeCodeCompleteResults(results);
 
 
     freeCommandLine(args,numOfTokens);
@@ -177,7 +190,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
         const wxChar previousChar = control->GetCharAt(control->GetCurrentPos() -2);
 
 
-        if (ch == '.' || (ch == ':' && previousChar == ':'))
+        if (ch == '.' || (ch == ':' && previousChar == ':') || (ch == '>' && previousChar == '-'))
         {
 
 
