@@ -106,34 +106,38 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-            Manager::Get()->GetLogManager()->Log(tempCommand);
+            //Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
-            wxStringTokenizer foo(tempCommand);
-            int size = foo.CountTokens();
-            const char** args = new const char*[1+size];
+            wxStringTokenizer tokenizer(tempCommand);
+            int numOfTokens = tokenizer.CountTokens();
+            char const** args = new  const char*[1+numOfTokens];
 
-            args[0] = "-I/usr/lib/clang/2.9/include";
+            args[0] = "-I/usr/lib/clang/2.9/include"; //Supposedly this is needed for the pch cache
 
             int i = 1;
-            while (foo.HasMoreTokens())
+            while (tokenizer.HasMoreTokens())
             {
-                wxString tokenString = foo.GetNextToken();
+                wxString tokenString = tokenizer.GetNextToken();
                 wxCharBuffer token= tokenString.ToUTF8();
                 char* tokenData = token.data();
-                wxString get;
+
 
                 char* tmp = new char[tokenString.length()+1];
                 memcpy(tmp,tokenData,tokenString.length()+1);
                 args[i++] = tmp;
-
-                get<<wxString(tokenData,wxConvUTF8);
-                Manager::Get()->GetLogManager()->Log(get);
             }
 
             CXIndex index = clang_createIndex(0,0);
-            unit = clang_parseTranslationUnit(index, buffer.data(),args,1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+            unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
             unitCreated = true;
+
+            for (int i = 0; i < numOfTokens; i++)
+            {
+
+                free((char*)args[i+1]);
+            }
+            free(args);
 
             }
             else
@@ -147,7 +151,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
             int column = control->GetColumn(control->GetCurrentPos()) +2;
 
 
-            CXCodeCompleteResults* foo= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
+            CXCodeCompleteResults* completionResults= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
 
             int pos   = control->GetCurrentPos();
             int start = control->WordStartPosition(pos, true);
@@ -156,21 +160,24 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-            int a = foo->NumResults;
+            int a = completionResults->NumResults;
 
 
             for (int i = 0; i < a; i++)
             {
-                CXCompletionResult res = foo->Results[i];
-                CXCompletionString str = res.CompletionString;
+                CXCompletionResult result = completionResults->Results[i];
+                CXCompletionString str = result.CompletionString;
                 CXString str2 = clang_getCompletionChunkText(str,1);
-                const char* stu = clang_getCString(str2);
+                const char* str3 = clang_getCString(str2);
 
 
                 //Manager::Get()->GetLogManager()->Log(wxString(stu,wxConvUTF8));
-                items.Add(wxString(stu,wxConvUTF8));
+                items.Add(wxString(str3,wxConvUTF8));
+                clang_disposeString(str2);
+
             }
 
+            clang_disposeCodeCompleteResults(completionResults);
             wxString final = GetStringFromArray(items, _(" "));
 
             //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
@@ -220,4 +227,5 @@ void ClangComplete::OnRelease(bool appShutDown)
     // NOTE: after this function, the inherited member variable
     // m_IsAttached will be FALSE...
     EditorHooks::UnregisterHook(hookId, true);
+    clang_disposeTranslationUnit(unit);
 }
