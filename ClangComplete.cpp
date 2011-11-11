@@ -88,60 +88,63 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-            ProjectFile* pf = editor->GetProjectFile();
-            ProjectBuildTarget *target = Manager::Get()->GetProjectManager()->GetActiveProject()->GetBuildTarget(0);
-            wxString test = target->GetCompilerID();
-            Compiler * comp = CompilerFactory::GetCompiler(test);
+                ProjectFile* pf = editor->GetProjectFile();
+                ProjectBuildTarget *target = Manager::Get()->GetProjectManager()->GetActiveProject()->GetBuildTarget(0);
+                wxString test = target->GetCompilerID();
+                Compiler * comp = CompilerFactory::GetCompiler(test);
 
-            const pfDetails& pfd = pf->GetFileDetails(target);
-
-
-            wxString Object = (comp->GetSwitches().UseFlatObjects)?pfd.object_file_flat:pfd.object_file;
-
-            const CompilerTool &tool = comp->GetCompilerTool(ctCompileObjectCmd,_(".cpp"));
-            wxString tempCommand = _("$options $includes");
-            comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
-                                         pfd.dep_file);
+                const pfDetails& pfd = pf->GetFileDetails(target);
 
 
+                wxString Object = (comp->GetSwitches().UseFlatObjects)?pfd.object_file_flat:pfd.object_file;
+
+                const CompilerTool &tool = comp->GetCompilerTool(ctCompileObjectCmd,_(".cpp"));
+                wxString tempCommand = _("$options $includes");
+                comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
+                                          pfd.dep_file);
 
 
-            //Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
-            wxStringTokenizer tokenizer(tempCommand);
-            int numOfTokens = tokenizer.CountTokens();
-            char const** args = new  const char*[1+numOfTokens];
-
-            args[0] = "-I/usr/lib/clang/2.9/include"; //Supposedly this is needed for the pch cache
-
-            int i = 1;
-            while (tokenizer.HasMoreTokens())
-            {
-                wxString tokenString = tokenizer.GetNextToken();
-                wxCharBuffer token= tokenString.ToUTF8();
-                char* tokenData = token.data();
+                Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
-                char* tmp = new char[tokenString.length()+1];
-                memcpy(tmp,tokenData,tokenString.length()+1);
-                args[i++] = tmp;
-            }
+                wxStringTokenizer tokenizer(tempCommand);
+                int numOfTokens = tokenizer.CountTokens();
+                char const** args = new  const char*[1+numOfTokens];
 
-            CXIndex index = clang_createIndex(0,0);
-            unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-            unitCreated = true;
+                args[0] = "-I/usr/lib/clang/2.9/include";
 
-            for (int i = 0; i < numOfTokens; i++)
-            {
+                int i = 1;
+                while (tokenizer.HasMoreTokens())
+                {
+                    wxString tokenString = tokenizer.GetNextToken();
+                    wxCharBuffer token= tokenString.ToUTF8();
+                    char* tokenData = token.data();
+                    wxString get;
 
-                free((char*)args[i+1]);
-            }
-            free(args);
+                    char* tmp = new char[tokenString.length()+1];
+                    memcpy(tmp,tokenData,tokenString.length()+1);
+                    args[i++] = tmp;
+
+                    get<<wxString(tokenData,wxConvUTF8);
+                    Manager::Get()->GetLogManager()->Log(get);
+                }
+
+                index = clang_createIndex(0,0);
+                unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+                unitCreated = true;
+
+                for (int i = 0; i < numOfTokens; i++)
+                {
+
+                    free((char*)args[i+1]);
+                }
+                free(args);
 
             }
             else
-            int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+                int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
 
 
 
@@ -151,7 +154,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
             int column = control->GetColumn(control->GetCurrentPos()) +2;
 
 
-            CXCodeCompleteResults* completionResults= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
+            CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
 
             int pos   = control->GetCurrentPos();
             int start = control->WordStartPosition(pos, true);
@@ -160,12 +163,12 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-            int a = completionResults->NumResults;
+            int numResults = results->NumResults;
 
 
-            for (int i = 0; i < a; i++)
+            for (int i = 0; i < numResults; i++)
             {
-                CXCompletionResult result = completionResults->Results[i];
+                CXCompletionResult result = results->Results[i];
                 CXCompletionString str = result.CompletionString;
                 CXString str2 = clang_getCompletionChunkText(str,1);
                 const char* str3 = clang_getCString(str2);
@@ -174,15 +177,14 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
                 //Manager::Get()->GetLogManager()->Log(wxString(stu,wxConvUTF8));
                 items.Add(wxString(str3,wxConvUTF8));
                 clang_disposeString(str2);
-
             }
+            clang_disposeCodeCompleteResults(results);
 
-            clang_disposeCodeCompleteResults(completionResults);
             wxString final = GetStringFromArray(items, _(" "));
 
             //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
             control->AutoCompShow(pos-start,final );
-           // Manager::Get()->GetLogManager()->Log(result);
+            // Manager::Get()->GetLogManager()->Log(result);
 
 
 
@@ -228,4 +230,5 @@ void ClangComplete::OnRelease(bool appShutDown)
     // m_IsAttached will be FALSE...
     EditorHooks::UnregisterHook(hookId, true);
     clang_disposeTranslationUnit(unit);
+    clang_disposeIndex(index);
 }

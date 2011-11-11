@@ -27,6 +27,7 @@ class ClangComplete : public cbPlugin
     public:
     int hookId;
     CXTranslationUnit unit;
+    CXIndex index;
     bool unitCreated;
         /** Constructor. */
         ClangComplete();
