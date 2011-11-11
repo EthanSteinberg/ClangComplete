@@ -6,6 +6,8 @@
 #include <editor_hooks.h>
 #include <wxscintilla/include/wx/wxscintilla.h>
 
+#include <wx/tokenzr.h>
+
 #include <clang-c/Index.h>
 #include <cbeditor.h>
 #include <cbstyledtextctrl.h>
@@ -91,16 +93,6 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
             wxString test = target->GetCompilerID();
             Compiler * comp = CompilerFactory::GetCompiler(test);
 
-            wxArrayString next = comp->GetCompilerSearchDirs(target);
-
-            wxString pray = GetStringFromArray(next, _(" "));
-
-            //Manager::Get()->GetLogManager()->Log(pray);
-
-
-
-
-
             const pfDetails& pfd = pf->GetFileDetails(target);
 
 
@@ -111,14 +103,38 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
             comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
                                          pfd.dep_file);
 
+
+
+
             Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
-            const char** args = new const char*[1];
+            wxStringTokenizer foo(tempCommand);
+            int size = foo.CountTokens();
+            const char** args = new const char*[1+size];
+
             args[0] = "-I/usr/lib/clang/2.9/include";
+
+            int i = 1;
+            while (foo.HasMoreTokens())
+            {
+                wxString tokenString = foo.GetNextToken();
+                wxCharBuffer token= tokenString.ToUTF8();
+                char* tokenData = token.data();
+                wxString get;
+
+                char* tmp = new char[tokenString.length()+1];
+                memcpy(tmp,tokenData,tokenString.length()+1);
+                args[i++] = tmp;
+
+                get<<wxString(tokenData,wxConvUTF8);
+                Manager::Get()->GetLogManager()->Log(get);
+            }
+
             CXIndex index = clang_createIndex(0,0);
             unit = clang_parseTranslationUnit(index, buffer.data(),args,1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
             unitCreated = true;
+
             }
             else
             int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
