@@ -19,30 +19,77 @@
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
 
-//DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
-//
-//DEFINE_EVENT_TYPE(wxEVT_MY_EVENT)
-//
-//class myThread : public wxThread
-//{
-//cbPlugin *handle;
-//public:
-//    myThread(cbPlugin *cb)
-//    {
-//        handle = cb;
-//
-//    }
-//
-//protected:
-//virtual ExitCode Entry()
-//{
-//   wxCommandEvent event(wxEVT_MY_EVENT, 100);
-//    event.SetEventObject(handle);
-//    wxPostEvent(handle,event);
-//    return 0;
-//
-//}
-//};
+DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
+
+DEFINE_EVENT_TYPE(wxEVT_MY_EVENT)
+
+
+void freeCommandLine(const char** args, int numOfTokens)
+{
+
+    for (int i = 0; i < numOfTokens; i++)
+    {
+
+        free((char*)args[i+1]);
+    }
+    free(args);
+
+
+}
+
+class myThread : public wxThread
+{
+cbPlugin *handle;
+
+CXIndex index;
+wxCharBuffer buffer;
+wxCharBuffer textBuf;
+int length;
+const char** args;
+int numOfTokens;
+
+public:
+    myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const wxCharBuffer& _textBuf, int _length, const char** _args, int _numOfTokens)
+    {
+        handle = cb;
+
+        index = _index;
+        buffer = _buffer;
+        textBuf = _textBuf;
+        length = _length;
+        args = _args;
+        numOfTokens = _numOfTokens;
+
+    }
+
+protected:
+
+CXTranslationUnit threadFunc()
+{
+     CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
+    CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
+    clang_disposeCodeCompleteResults(results);
+
+    freeCommandLine(args,numOfTokens);
+
+    return unit;
+}
+
+
+virtual ExitCode Entry()
+{
+
+
+
+   wxCommandEvent event(wxEVT_MY_EVENT, 100);
+   event.SetClientData(threadFunc());
+    wxPostEvent(handle,event);
+    return 0;
+
+}
+};
 
 
 namespace
@@ -50,16 +97,21 @@ namespace
 PluginRegistrant<ClangComplete> reg(_T("ClangComplete"));
 }
 
-//int threadDoneId = wxNewId();
+int threadDoneId = wxNewId();
 
-//BEGIN_EVENT_TABLE(ClangComplete, cbPlugin)
-//    EVT_COMMAND(100,wxEVT_MY_EVENT,ClangComplete::threadDone)
-//END_EVENT_TABLE()
+BEGIN_EVENT_TABLE(ClangComplete, cbPlugin)
+    EVT_COMMAND(100,wxEVT_MY_EVENT,ClangComplete::threadDone)
+END_EVENT_TABLE()
 
-//void ClangComplete::threadDone(wxCommandEvent& evt)
-//{
-//Manager::Get()->GetLogManager()->Log(_("Event called"));
-//}
+void ClangComplete::threadDone(wxCommandEvent& evt)
+{
+    fileProcessed = true;
+
+    unitCreated =true;
+    unit = (CXTranslationUnit) evt.GetClientData();
+
+Manager::Get()->GetLogManager()->Log(_("Processing done"));
+}
 
 
 wxString generateCommandString()
@@ -110,18 +162,8 @@ const char** generateCommandLine(wxString command,int &numOfTokens)
 
 }
 
-void freeCommandLine(const char** args, int numOfTokens)
-{
-
-    for (int i = 0; i < numOfTokens; i++)
-    {
-
-        free((char*)args[i+1]);
-    }
-    free(args);
 
 
-}
 
 void ClangComplete::InitializeTU()
 {
@@ -137,9 +179,9 @@ void ClangComplete::InitializeTU()
 
 
     cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+
     wxString name = editor->GetFilename();
     wxCharBuffer buffer = name.ToUTF8();
-
 
 
     wxString tempCommand = generateCommandString();
@@ -154,24 +196,23 @@ void ClangComplete::InitializeTU()
     cbStyledTextCtrl* control  = editor->GetControl();
 
 
+
+
     wxString text = control->GetText();
     wxCharBuffer textBuf = text.ToUTF8();
 
     int length = control->GetLength();
 
-    CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
+
 
 
     index = clang_createIndex(0,0);
-    unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
-    clang_disposeCodeCompleteResults(results);
 
 
-    freeCommandLine(args,numOfTokens);
+    myThread *thread = new myThread(this,index,buffer,textBuf,length,args,numOfTokens);
+    thread->Create();
+    thread->Run();
 
-    bool unitCreated =true;
 
 }
 
@@ -194,11 +235,7 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 
 void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
 {
-//    Manager::Get()->GetLogManager()->Log(_("Thread start"));
-//    myThread thread(this);
-//    thread.Create();
-//    thread.Run();
-//    Manager::Get()->GetLogManager()->Log(_("Thread stop"));
+
    // while (thread.IsAlive());
 
 
@@ -242,6 +279,12 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
         if (ch == '.' || (ch == ':' && previousChar == ':') || (ch == '>' && previousChar == '-'))
         {
+            if (!fileProcessed)
+            {
+
+                Manager::Get()->GetLogManager()->Log(_("Not done"));
+                return;
+            }
 
 
             wxString name = editor->GetFilename();
@@ -352,8 +395,9 @@ void ClangComplete::OnAttach()
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnEditorOpen));
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnProjectOpen));
     unitCreated = false;
-    waitingForProject = true;
+    waitingForProject = false;
 
+    fileProcessed = false;
    // fprintf(stderr, "This is an first\n");
 
 

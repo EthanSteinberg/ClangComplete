@@ -40,7 +40,10 @@ void OnEditorOpen(CodeBlocksEvent& event);
 void OnProjectOpen(CodeBlocksEvent &evt);
 void OnStuff(cbEditor *editor, wxScintillaEvent& event);
 
-//void threadDone(wxCommandEvent &evt);
+void threadDone(wxCommandEvent &evt);
+
+
+bool fileProcessed;
 
 
         /** This method is called by Code::Blocks and is used by the plugin
@@ -103,7 +106,7 @@ void OnStuff(cbEditor *editor, wxScintillaEvent& event);
         virtual void OnRelease(bool appShutDown);
 
 private:
-//DECLARE_EVENT_TABLE();
+DECLARE_EVENT_TABLE();
 };
 
 #endif // CLANGCOMPLETE_H_INCLUDED
