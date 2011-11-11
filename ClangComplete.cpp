@@ -124,9 +124,9 @@ void ClangComplete::InitializeTU()
 
     index = clang_createIndex(0,0);
     unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
-    clang_disposeCodeCompleteResults(results);
+    //int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+   // CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
+    //clang_disposeCodeCompleteResults(results);
 
 
     freeCommandLine(args,numOfTokens);
@@ -207,7 +207,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-            int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+         //   int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
 
 
 
