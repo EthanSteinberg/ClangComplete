@@ -18,10 +18,49 @@
 #include <editormanager.h>
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
+
+//DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
+//
+//DEFINE_EVENT_TYPE(wxEVT_MY_EVENT)
+//
+//class myThread : public wxThread
+//{
+//cbPlugin *handle;
+//public:
+//    myThread(cbPlugin *cb)
+//    {
+//        handle = cb;
+//
+//    }
+//
+//protected:
+//virtual ExitCode Entry()
+//{
+//   wxCommandEvent event(wxEVT_MY_EVENT, 100);
+//    event.SetEventObject(handle);
+//    wxPostEvent(handle,event);
+//    return 0;
+//
+//}
+//};
+
+
 namespace
 {
 PluginRegistrant<ClangComplete> reg(_T("ClangComplete"));
 }
+
+//int threadDoneId = wxNewId();
+
+//BEGIN_EVENT_TABLE(ClangComplete, cbPlugin)
+//    EVT_COMMAND(100,wxEVT_MY_EVENT,ClangComplete::threadDone)
+//END_EVENT_TABLE()
+
+//void ClangComplete::threadDone(wxCommandEvent& evt)
+//{
+//Manager::Get()->GetLogManager()->Log(_("Event called"));
+//}
+
 
 wxString generateCommandString()
 {
@@ -86,6 +125,7 @@ void freeCommandLine(const char** args, int numOfTokens)
 
 void ClangComplete::InitializeTU()
 {
+
     if (unitCreated)
     {
 
@@ -137,11 +177,12 @@ void ClangComplete::InitializeTU()
 
 void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 {
+
     // Manager::Get()->GetLogManager()->Log(_("Project open"));
-    if (waitingForProject)
+    if (waitingForProject && Manager::Get()->GetEditorManager()->GetActiveEditor() != NULL)
     {
 
-        InitializeTU();
+       InitializeTU();
         waitingForProject = false;
     }
 
@@ -150,14 +191,23 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 
 
 
+
 void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
 {
+//    Manager::Get()->GetLogManager()->Log(_("Thread start"));
+//    myThread thread(this);
+//    thread.Create();
+//    thread.Run();
+//    Manager::Get()->GetLogManager()->Log(_("Thread stop"));
+   // while (thread.IsAlive());
+
+
     if (evt.GetProject() == NULL)
     {
         waitingForProject = true;
     }
     else
-    InitializeTU();
+       InitializeTU();
 }
 
 // constructor
@@ -207,7 +257,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-          int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+            int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
 
 
 
@@ -228,6 +278,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
             int numResults = results->NumResults;
+            clang_sortCodeCompletionResults(results->Results,results->NumResults);
 
 
             for (int i = 0; i < numResults; i++)
@@ -235,15 +286,29 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
                 CXCompletionResult result = results->Results[i];
                 CXCompletionString str = result.CompletionString;
 
-                //int numOfChunks = clang_get
+                int numOfChunks = clang_getNumCompletionChunks(str);
+                wxString resulting = _("");
+               // resulting << clang_getCompletionPriority(str);
+               // resulting << _(":");
 
-                CXString str2 = clang_getCompletionChunkText(str,1);
-                const char* str3 = clang_getCString(str2);
+                for (int i =0 ; i< numOfChunks; i++)
+                {
+                    if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
+                    {
 
 
-                //Manager::Get()->GetLogManager()->Log(wxString(stu,wxConvUTF8));
-                items.Add(wxString(str3,wxConvUTF8));
-                clang_disposeString(str2);
+
+                    CXString str2 = clang_getCompletionChunkText(str,i);
+                    const char* str3 = clang_getCString(str2);
+                    resulting += wxString(str3,wxConvUTF8) ;//+ _(" ");
+                    }
+
+
+
+                }
+                Manager::Get()->GetLogManager()->Log(resulting);
+                items.Add(resulting);
+
             }
             clang_disposeCodeCompleteResults(results);
 
@@ -264,6 +329,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 }
 
+
 void ClangComplete::OnAttach()
 {
     // do whatever initialization you need for your plugin
@@ -282,10 +348,13 @@ void ClangComplete::OnAttach()
     EditorHooks::HookFunctorBase* myhook = new EditorHooks::HookFunctor<ClangComplete>(this, &ClangComplete::OnStuff);
     hookId = EditorHooks::RegisterHook(myhook);
 
+
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnEditorOpen));
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnProjectOpen));
     unitCreated = false;
     waitingForProject = true;
+
+   // fprintf(stderr, "This is an first\n");
 
 
 

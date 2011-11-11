@@ -40,6 +40,8 @@ void OnEditorOpen(CodeBlocksEvent& event);
 void OnProjectOpen(CodeBlocksEvent &evt);
 void OnStuff(cbEditor *editor, wxScintillaEvent& event);
 
+//void threadDone(wxCommandEvent &evt);
+
 
         /** This method is called by Code::Blocks and is used by the plugin
           * to add any menu items it needs on Code::Blocks's menu bar.\n
@@ -100,6 +102,8 @@ void OnStuff(cbEditor *editor, wxScintillaEvent& event);
           */
         virtual void OnRelease(bool appShutDown);
 
+private:
+//DECLARE_EVENT_TABLE();
 };
 
 #endif // CLANGCOMPLETE_H_INCLUDED
