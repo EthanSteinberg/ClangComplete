@@ -71,6 +71,8 @@ const char** generateCommandLine(wxString command,int &numOfTokens)
         args[i++] = tmp;
     }
 
+    return args;
+
 }
 
 void freeCommandLine(const char** args, int numOfTokens)
