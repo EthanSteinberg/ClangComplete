@@ -33,6 +33,11 @@ class ClangComplete : public cbPlugin
         ClangComplete();
         /** Destructor. */
         virtual ~ClangComplete();
+
+    bool waitingForProject;
+void InitializeTU();
+void OnEditorOpen(CodeBlocksEvent& event);
+void OnProjectOpen(CodeBlocksEvent &evt);
 void OnStuff(cbEditor *editor, wxScintillaEvent& event);
 
 

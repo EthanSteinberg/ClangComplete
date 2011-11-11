@@ -2325,13 +2325,14 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
-1320992505 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+1321033629 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
 	<sdk.h>
 	<configurationpanel.h>
 	"ClangComplete.h"
 	<logmanager.h>
 	<editor_hooks.h>
 	<wxscintilla/include/wx/wxscintilla.h>
+	<wx/tokenzr.h>
 	<clang-c/Index.h>
 	<cbeditor.h>
 	<cbstyledtextctrl.h>
@@ -2340,11 +2341,16 @@
 	<compiler.h>
 	<compilerfactory.h>
 
-1320983665 /home/ethan/Programming/ClangComplete/ClangComplete.h
+1321032987 /home/ethan/Programming/ClangComplete/ClangComplete.h
 	<wx/wxprec.h>
 	<wx/wx.h>
 	<cbplugin.h>
 	<codeblocks/logmanager.h>
 	<codeblocks/editor_hooks.h>
 	<clang-c/Index.h>
+
+1318727272 /usr/include/wx-2.8/wx/tokenzr.h
+	"wx/object.h"
+	"wx/string.h"
+	"wx/arrstr.h"
 

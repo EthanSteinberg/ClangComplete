@@ -15,6 +15,7 @@
 #include <cbproject.h>
 #include <compiler.h>
 #include <compilerfactory.h>
+#include <editormanager.h>
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
 namespace
@@ -22,10 +23,127 @@ namespace
 PluginRegistrant<ClangComplete> reg(_T("ClangComplete"));
 }
 
+wxString generateCommandString()
+{
+    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+
+    ProjectFile* pf = editor->GetProjectFile();
+    cbProject *project = Manager::Get()->GetProjectManager()->GetActiveProject();
+
+
+
+    Manager::Get()->GetLogManager()->Log(project->GetNativeFilename());
+
+    ProjectBuildTarget *target = project->GetBuildTarget(0);
+    wxString test = target->GetCompilerID();
+    Compiler * comp = CompilerFactory::GetCompiler(test);
+
+    const pfDetails& pfd = pf->GetFileDetails(target);
+
+
+    wxString Object = (comp->GetSwitches().UseFlatObjects)?pfd.object_file_flat:pfd.object_file;
+
+    const CompilerTool &tool = comp->GetCompilerTool(ctCompileObjectCmd,_(".cpp"));
+    wxString tempCommand = _("$options $includes");
+    comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
+                              pfd.dep_file);
+    return tempCommand;
+}
+
+const char** generateCommandLine(wxString command,int &numOfTokens)
+{
+    wxStringTokenizer tokenizer(command);
+    numOfTokens = tokenizer.CountTokens();
+    char const** args = new  const char*[1+numOfTokens];
+
+    args[0] = "-I/usr/lib/clang/2.9/include";
+
+    int i = 1;
+    while (tokenizer.HasMoreTokens())
+    {
+        wxString tokenString = tokenizer.GetNextToken();
+        wxCharBuffer token= tokenString.ToUTF8();
+        char* tokenData = token.data();
+        wxString get;
+
+        char* tmp = new char[tokenString.length()+1];
+        memcpy(tmp,tokenData,tokenString.length()+1);
+        args[i++] = tmp;
+    }
+
+}
+
+void freeCommandLine(const char** args, int numOfTokens)
+{
+
+    for (int i = 0; i < numOfTokens; i++)
+    {
+
+        free((char*)args[i+1]);
+    }
+    free(args);
+
+
+}
+
+void ClangComplete::InitializeTU()
+{
+    if (unitCreated)
+    {
+
+
+        clang_disposeTranslationUnit(unit);
+        clang_disposeIndex(index);
+    }
+
+
+
+    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+    wxString name = editor->GetFilename();
+    wxCharBuffer buffer = name.ToUTF8();
+
+    wxString tempCommand = generateCommandString();
+
+    Manager::Get()->GetLogManager()->Log(tempCommand);
+
+
+    int numOfTokens;
+    const char**args = generateCommandLine(tempCommand,numOfTokens);
+
+    index = clang_createIndex(0,0);
+    unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, NULL,0, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+
+
+    freeCommandLine(args,numOfTokens);
+
+    bool unitCreated =true;
+
+}
+
+void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
+{
+    // Manager::Get()->GetLogManager()->Log(_("Project open"));
+    if (waitingForProject)
+    {
+
+        InitializeTU();
+        waitingForProject = false;
+    }
+
+}
 
 
 
 
+void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
+{
+    if (evt.GetProject() == NULL)
+    {
+        waitingForProject = true;
+    }
+    else
+    InitializeTU();
+}
 
 // constructor
 ClangComplete::ClangComplete()
@@ -49,29 +167,20 @@ ClangComplete::~ClangComplete()
 
 void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 {
-//
-//    if (event.GetEventType() == wxEVT_SCI_CHARADDED)
-//        Manager::Get()->GetLogManager()->Log(_("wxEVT_SCI_CHARADDED"));
-//    else if (event.GetEventType() == wxEVT_SCI_CHANGE)
-//        Manager::Get()->GetLogManager()->Log(_("wxEVT_SCI_CHANGE"));
-//    else if (event.GetEventType() == wxEVT_SCI_KEY)
-//        Manager::Get()->GetLogManager()->Log(_("wxEVT_SCI_KEY"));
-//    else if (event.GetEventType() == wxEVT_SCI_MODIFIED)
-//        Manager::Get()->GetLogManager()->Log(_("wxEVT_SCI_MODIFIED"));
-
-
     if (event.GetEventType() == wxEVT_SCI_CHARADDED)
     {
 
-        static wxChar lastKey = _T(' ');
         const wxChar ch = event.GetKey();
-        if (ch == '.' || (ch == ':' && lastKey == ':'))
+        cbStyledTextCtrl* control  = editor->GetControl();
+        const wxChar previousChar = control->GetCharAt(control->GetCurrentPos() -2);
+
+
+        if (ch == '.' || (ch == ':' && previousChar == ':'))
         {
-            cbStyledTextCtrl* control  = editor->GetControl();
+
 
             wxString name = editor->GetFilename();
             wxCharBuffer buffer = name.ToUTF8();
-
 
             wxString text = control->GetText();
             wxCharBuffer textBuf = text.ToUTF8();
@@ -83,68 +192,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
-            if (!unitCreated)
-            {
-
-
-
-                ProjectFile* pf = editor->GetProjectFile();
-                ProjectBuildTarget *target = Manager::Get()->GetProjectManager()->GetActiveProject()->GetBuildTarget(0);
-                wxString test = target->GetCompilerID();
-                Compiler * comp = CompilerFactory::GetCompiler(test);
-
-                const pfDetails& pfd = pf->GetFileDetails(target);
-
-
-                wxString Object = (comp->GetSwitches().UseFlatObjects)?pfd.object_file_flat:pfd.object_file;
-
-                const CompilerTool &tool = comp->GetCompilerTool(ctCompileObjectCmd,_(".cpp"));
-                wxString tempCommand = _("$options $includes");
-                comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
-                                          pfd.dep_file);
-
-
-
-
-                Manager::Get()->GetLogManager()->Log(tempCommand);
-
-
-                wxStringTokenizer tokenizer(tempCommand);
-                int numOfTokens = tokenizer.CountTokens();
-                char const** args = new  const char*[1+numOfTokens];
-
-                args[0] = "-I/usr/lib/clang/2.9/include";
-
-                int i = 1;
-                while (tokenizer.HasMoreTokens())
-                {
-                    wxString tokenString = tokenizer.GetNextToken();
-                    wxCharBuffer token= tokenString.ToUTF8();
-                    char* tokenData = token.data();
-                    wxString get;
-
-                    char* tmp = new char[tokenString.length()+1];
-                    memcpy(tmp,tokenData,tokenString.length()+1);
-                    args[i++] = tmp;
-
-                    get<<wxString(tokenData,wxConvUTF8);
-                    Manager::Get()->GetLogManager()->Log(get);
-                }
-
-                index = clang_createIndex(0,0);
-                unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-                unitCreated = true;
-
-                for (int i = 0; i < numOfTokens; i++)
-                {
-
-                    free((char*)args[i+1]);
-                }
-                free(args);
-
-            }
-            else
-                int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+            int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
 
 
 
@@ -163,6 +211,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
 
+
             int numResults = results->NumResults;
 
 
@@ -170,6 +219,9 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
             {
                 CXCompletionResult result = results->Results[i];
                 CXCompletionString str = result.CompletionString;
+
+                //int numOfChunks = clang_get
+
                 CXString str2 = clang_getCompletionChunkText(str,1);
                 const char* str3 = clang_getCString(str2);
 
@@ -190,7 +242,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
         }
-        lastKey = ch;
+
     }
 
 
@@ -215,7 +267,10 @@ void ClangComplete::OnAttach()
     EditorHooks::HookFunctorBase* myhook = new EditorHooks::HookFunctor<ClangComplete>(this, &ClangComplete::OnStuff);
     hookId = EditorHooks::RegisterHook(myhook);
 
+    Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnEditorOpen));
+    Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnProjectOpen));
     unitCreated = false;
+    waitingForProject = true;
 
 
 
@@ -229,6 +284,11 @@ void ClangComplete::OnRelease(bool appShutDown)
     // NOTE: after this function, the inherited member variable
     // m_IsAttached will be FALSE...
     EditorHooks::UnregisterHook(hookId, true);
-    clang_disposeTranslationUnit(unit);
-    clang_disposeIndex(index);
+    if (unitCreated)
+    {
+
+
+        clang_disposeTranslationUnit(unit);
+        clang_disposeIndex(index);
+    }
 }
