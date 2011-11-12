@@ -25,6 +25,7 @@
 class ClangComplete : public cbPlugin
 {
     public:
+    wxImageList* m_pImageList;
     int hookId;
     CXTranslationUnit unit;
     CXIndex index;
@@ -36,12 +37,14 @@ class ClangComplete : public cbPlugin
 
     bool waitingForProject;
 void InitializeTU();
+void OnCodeComplete(wxCommandEvent &evt);
 void OnEditorOpen(CodeBlocksEvent& event);
 void OnProjectOpen(CodeBlocksEvent &evt);
 void OnStuff(cbEditor *editor, wxScintillaEvent& event);
 
 void threadDone(wxCommandEvent &evt);
 
+void doCodeComplete();
 
 bool fileProcessed;
 
@@ -53,7 +56,7 @@ bool fileProcessed;
           * just do nothing ;)
           * @param menuBar the wxMenuBar to create items in
           */
-        virtual void BuildMenu(wxMenuBar* menuBar){}
+        virtual void BuildMenu(wxMenuBar* menuBar);
 
         /** This method is called by Code::Blocks core modules (EditorManager,
           * ProjectManager etc) and is used by the plugin to add any menu

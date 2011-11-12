@@ -16,8 +16,37 @@
 #include <compiler.h>
 #include <compilerfactory.h>
 #include <editormanager.h>
+#include <configmanager.h>
+#include <wx/imaglist.h>
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
+
+static const char * cpp_keyword_xpm[] =
+{
+    "16 16 2 1",
+    "     c None",
+    ".    c #04049B",
+    "                ",
+    "  .......       ",
+    " .........      ",
+    " ..     ..      ",
+    "..              ",
+    "..   ..     ..  ",
+    "..   ..     ..  ",
+    ".. ...... ......",
+    ".. ...... ......",
+    "..   ..     ..  ",
+    "..   ..     ..  ",
+    "..      ..      ",
+    "...     ..      ",
+    " .........      ",
+    "  .......       ",
+    "                "
+};
+
+
+
+
 
 DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
 
@@ -37,16 +66,18 @@ void freeCommandLine(const char** args, int numOfTokens)
 
 }
 
+int threadDoneId = wxNewId();
+int onCompleteId = wxNewId();
 class myThread : public wxThread
 {
-cbPlugin *handle;
+    cbPlugin *handle;
 
-CXIndex index;
-wxCharBuffer buffer;
-wxCharBuffer textBuf;
-int length;
-const char** args;
-int numOfTokens;
+    CXIndex index;
+    wxCharBuffer buffer;
+    wxCharBuffer textBuf;
+    int length;
+    const char** args;
+    int numOfTokens;
 
 public:
     myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const wxCharBuffer& _textBuf, int _length, const char** _args, int _numOfTokens)
@@ -64,31 +95,31 @@ public:
 
 protected:
 
-CXTranslationUnit threadFunc()
-{
-     CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
-    CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
-    clang_disposeCodeCompleteResults(results);
+    CXTranslationUnit threadFunc()
+    {
+        CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
+        CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+        int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+        CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
+        clang_disposeCodeCompleteResults(results);
 
-    freeCommandLine(args,numOfTokens);
+        freeCommandLine(args,numOfTokens);
 
-    return unit;
-}
-
-
-virtual ExitCode Entry()
-{
+        return unit;
+    }
 
 
+    virtual ExitCode Entry()
+    {
 
-   wxCommandEvent event(wxEVT_MY_EVENT, 100);
-   event.SetClientData(threadFunc());
-    wxPostEvent(handle,event);
-    return 0;
 
-}
+
+        wxCommandEvent event(wxEVT_MY_EVENT, threadDoneId);
+        event.SetClientData(threadFunc());
+        wxPostEvent(handle,event);
+        return 0;
+
+    }
 };
 
 
@@ -97,10 +128,10 @@ namespace
 PluginRegistrant<ClangComplete> reg(_T("ClangComplete"));
 }
 
-int threadDoneId = wxNewId();
 
 BEGIN_EVENT_TABLE(ClangComplete, cbPlugin)
-    EVT_COMMAND(100,wxEVT_MY_EVENT,ClangComplete::threadDone)
+    EVT_COMMAND(threadDoneId,wxEVT_MY_EVENT,ClangComplete::threadDone)
+    EVT_MENU(onCompleteId, ClangComplete::OnCodeComplete)
 END_EVENT_TABLE()
 
 void ClangComplete::threadDone(wxCommandEvent& evt)
@@ -110,7 +141,7 @@ void ClangComplete::threadDone(wxCommandEvent& evt)
     unitCreated =true;
     unit = (CXTranslationUnit) evt.GetClientData();
 
-Manager::Get()->GetLogManager()->Log(_("Processing done"));
+    Manager::Get()->GetLogManager()->Log(_("Processing done"));
 }
 
 
@@ -195,7 +226,8 @@ void ClangComplete::InitializeTU()
 
     cbStyledTextCtrl* control  = editor->GetControl();
 
-
+    for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
+        control->RegisterImage(i,m_pImageList->GetBitmap(i));
 
 
     wxString text = control->GetText();
@@ -223,8 +255,14 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
     if (waitingForProject && Manager::Get()->GetEditorManager()->GetActiveEditor() != NULL)
     {
 
-       InitializeTU();
+        InitializeTU();
+
         waitingForProject = false;
+
+
+
+
+
     }
 
 }
@@ -233,10 +271,11 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 
 
 
+
 void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
 {
 
-   // while (thread.IsAlive());
+    // while (thread.IsAlive());
 
 
     if (evt.GetProject() == NULL)
@@ -244,7 +283,7 @@ void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
         waitingForProject = true;
     }
     else
-       InitializeTU();
+        InitializeTU();
 }
 
 // constructor
@@ -266,6 +305,160 @@ ClangComplete::~ClangComplete()
 {
 }
 
+wxString getImageNum(CXCursorKind kind)
+{
+    wxString result = _("0");
+
+    switch(kind)
+    {
+    case CXCursor_CXXMethod:
+        result = _("13");
+        break;
+
+    case CXCursor_FieldDecl:
+        result = _("16");
+        break;
+
+    case CXCursor_EnumDecl:
+        result = _("18");
+        break;
+
+    case CXCursor_Constructor:
+        result = _("7");
+        break;
+
+    case CXCursor_ClassDecl:
+        result = _("1");
+        break;
+
+    case CXCursor_Destructor:
+        result = _("10");
+        break;
+
+    }
+
+    return result;
+
+}
+
+
+void ClangComplete::doCodeComplete()
+{
+    if (!fileProcessed)
+    {
+
+        Manager::Get()->GetLogManager()->Log(_("Not done"));
+        return;
+    }
+
+ cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+ cbStyledTextCtrl *control = editor->GetControl();
+
+    wxString name = editor->GetFilename();
+    wxCharBuffer buffer = name.ToUTF8();
+
+    wxString text = control->GetText();
+    wxCharBuffer textBuf = text.ToUTF8();
+
+    int length = control->GetLength();
+
+    CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
+
+
+
+
+    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+
+
+
+
+
+    int line = control->GetCurrentLine() +1;
+    int column = control->GetColumn(control->GetCurrentPos()) +2;
+
+
+    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
+
+    int pos   = control->GetCurrentPos();
+    int start = control->WordStartPosition(pos, true);
+
+    wxArrayString items;
+
+
+
+
+    int numResults = results->NumResults;
+    clang_sortCodeCompletionResults(results->Results,results->NumResults);
+
+
+    for (int i = 0; i < numResults; i++)
+    {
+
+
+        CXCompletionResult result = results->Results[i];
+        CXCompletionString str = result.CompletionString;
+        CXCursorKind kind = result.CursorKind;
+        wxString type = getImageNum(kind);
+        int numOfChunks = clang_getNumCompletionChunks(str);
+
+        wxString resulting = _("");
+
+        //CXString spell = clang_getCursorKindSpelling(kind);
+        //const char* spellChar = clang_getCString(spell);
+        //wxString resulting = wxString(spellChar,wxConvUTF8);
+        //  resulting << clang_getCompletionPriority(str);
+
+        //  if (clang_getCompletionAvailability(str) != CXAvailability_Available)
+        // resulting<<_("NotEvenThere");
+        // resulting << _(":");
+
+        for (int i =0 ; i< numOfChunks; i++)
+        {
+            if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
+            {
+
+
+
+                CXString str2 = clang_getCompletionChunkText(str,i);
+                const char* str3 = clang_getCString(str2);
+                resulting += wxString(str3,wxConvUTF8) + _("?") + type;
+            }
+
+
+
+        }
+        Manager::Get()->GetLogManager()->Log(resulting);
+        items.Add(resulting);
+
+    }
+    clang_disposeCodeCompleteResults(results);
+
+
+    wxString final = GetStringFromArray(items, _(" "));
+
+
+
+
+
+    //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
+    control->AutoCompShow(pos-start,final );
+    // Manager::Get()->GetLogManager()->Log(result);
+}
+
+void ClangComplete::OnCodeComplete(wxCommandEvent &evt)
+{
+    doCodeComplete();
+}
+
+void ClangComplete::BuildMenu(wxMenuBar *menuBar)
+{
+
+
+    wxMenu* menu = menuBar->GetMenu(menuBar->FindMenu(_("&Edit")));
+
+    menu->Append(onCompleteId, _("ClangComp\tCtrl-F1"));
+
+}
 
 void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 {
@@ -279,90 +472,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
         if (ch == '.' || (ch == ':' && previousChar == ':') || (ch == '>' && previousChar == '-'))
         {
-            if (!fileProcessed)
-            {
-
-                Manager::Get()->GetLogManager()->Log(_("Not done"));
-                return;
-            }
-
-
-            wxString name = editor->GetFilename();
-            wxCharBuffer buffer = name.ToUTF8();
-
-            wxString text = control->GetText();
-            wxCharBuffer textBuf = text.ToUTF8();
-
-            int length = control->GetLength();
-
-            CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
-
-
-
-
-            int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-
-
-
-
-
-            int line = control->GetCurrentLine() +1;
-            int column = control->GetColumn(control->GetCurrentPos()) +2;
-
-
-            CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
-
-            int pos   = control->GetCurrentPos();
-            int start = control->WordStartPosition(pos, true);
-
-            wxArrayString items;
-
-
-
-
-            int numResults = results->NumResults;
-            clang_sortCodeCompletionResults(results->Results,results->NumResults);
-
-
-            for (int i = 0; i < numResults; i++)
-            {
-                CXCompletionResult result = results->Results[i];
-                CXCompletionString str = result.CompletionString;
-
-                int numOfChunks = clang_getNumCompletionChunks(str);
-                wxString resulting = _("");
-               // resulting << clang_getCompletionPriority(str);
-               // resulting << _(":");
-
-                for (int i =0 ; i< numOfChunks; i++)
-                {
-                    if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
-                    {
-
-
-
-                    CXString str2 = clang_getCompletionChunkText(str,i);
-                    const char* str3 = clang_getCString(str2);
-                    resulting += wxString(str3,wxConvUTF8) ;//+ _(" ");
-                    }
-
-
-
-                }
-                Manager::Get()->GetLogManager()->Log(resulting);
-                items.Add(resulting);
-
-            }
-            clang_disposeCodeCompleteResults(results);
-
-            wxString final = GetStringFromArray(items, _(" "));
-
-            //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
-            control->AutoCompShow(pos-start,final );
-            // Manager::Get()->GetLogManager()->Log(result);
-
-
-
+            doCodeComplete();
 
         }
 
@@ -398,7 +508,96 @@ void ClangComplete::OnAttach()
     waitingForProject = false;
 
     fileProcessed = false;
-   // fprintf(stderr, "This is an first\n");
+
+
+    m_pImageList = new wxImageList(16, 16);
+    wxBitmap bmp;
+    wxString prefix = ConfigManager::GetDataFolder() + _T("/images/codecompletion/");
+    // bitmaps must be added by order of PARSER_IMG_* consts
+    bmp = cbLoadBitmap(prefix + _T("class_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CLASS_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("class.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CLASS
+    bmp = cbLoadBitmap(prefix + _T("class_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CLASS_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("class_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CLASS_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("class_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CLASS_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("ctor_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CTOR_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("ctor_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CTOR_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("ctor_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_CTOR_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("dtor_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_DTOR_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("dtor_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_DTOR_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("dtor_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_DTOR_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("method_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_FUNC_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("method_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_FUNC_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("method_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_FUNC_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("var_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_VAR_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("var_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_VAR_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("var_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_VAR_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("preproc.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_PREPROCESSOR
+    bmp = cbLoadBitmap(prefix + _T("enum.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_ENUM
+    bmp = cbLoadBitmap(prefix + _T("enum_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_ENUM_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("enum_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_ENUM_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("enum_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_ENUM_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("enumerator.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_ENUMERATOR
+    bmp = cbLoadBitmap(prefix + _T("namespace.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_NAMESPACE
+    bmp = cbLoadBitmap(prefix + _T("typedef.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_TYPEDEF
+    bmp = cbLoadBitmap(prefix + _T("typedef_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_TYPEDEF_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("typedef_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_TYPEDEF_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("typedef_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_TYPEDEF_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("symbols_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_SYMBOLS_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("vars_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_VARS_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("funcs_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_FUNCS_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("enums_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_ENUMS_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("preproc_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_PREPROC_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("others_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_OTHERS_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("typedefs_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_TYPEDEF_FOLDER
+    bmp = cbLoadBitmap(prefix + _T("macro.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_MACRO
+    bmp = cbLoadBitmap(prefix + _T("macro_private.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_MACRO_PRIVATE
+    bmp = cbLoadBitmap(prefix + _T("macro_protected.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_MACRO_PROTECTED
+    bmp = cbLoadBitmap(prefix + _T("macro_public.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_MACRO_PUBLIC
+    bmp = cbLoadBitmap(prefix + _T("macro_folder.png"), wxBITMAP_TYPE_PNG);
+    m_pImageList->Add(bmp); // PARSER_IMG_MACRO_FOLDER
+
+
+
+    // fprintf(stderr, "This is an first\n");
 
 
 
