@@ -351,8 +351,8 @@ void ClangComplete::doCodeComplete()
         return;
     }
 
- cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
- cbStyledTextCtrl *control = editor->GetControl();
+    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+    cbStyledTextCtrl *control = editor->GetControl();
 
     wxString name = editor->GetFilename();
     wxCharBuffer buffer = name.ToUTF8();
