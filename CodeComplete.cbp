@@ -31,7 +31,7 @@
 			<Add directory="../../../../usr/include/codeblocks" />
 		</Compiler>
 		<Linker>
-			<Add library="../../../../usr/lib/libclang.so" />
+			<Add library="/usr/local/lib/libclang.so" />
 			<Add directory="../../../../usr/lib/codeblocks" />
 		</Linker>
 		<Unit filename="ClangComplete.cpp" />

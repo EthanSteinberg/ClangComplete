@@ -305,34 +305,85 @@ ClangComplete::~ClangComplete()
 {
 }
 
-wxString getImageNum(CXCursorKind kind)
+wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
 {
     wxString result = _("0");
+
 
     switch(kind)
     {
     case CXCursor_CXXMethod:
+        if (spec == CX_CXXPublic)
         result = _("13");
+
+        else if (spec == CX_CXXProtected)
+        result = _("12");
+
+        else if (spec == CX_CXXPrivate)
+        result = _("11");
+
         break;
 
     case CXCursor_FieldDecl:
+        if (spec == CX_CXXPublic)
         result = _("16");
+
+        else if (spec == CX_CXXProtected)
+        result = _("15");
+
+        else if (spec == CX_CXXPrivate)
+        result = _("14");
         break;
 
+
     case CXCursor_EnumDecl:
-        result = _("18");
+        if (spec == CX_CXXPublic)
+        result = _("21");
+
+        else if (spec == CX_CXXProtected)
+        result = _("20");
+
+        else if (spec == CX_CXXPrivate)
+        result = _("19");
+
+        else if (spec == CX_CXXInvalidAccessSpecifier)
+        result = _("18");;
         break;
 
     case CXCursor_Constructor:
+        if (spec == CX_CXXPublic)
         result = _("7");
+
+        else if (spec == CX_CXXProtected)
+        result = _("6");
+
+        else if (spec == CX_CXXPrivate)
+        result = _("5");
         break;
 
     case CXCursor_ClassDecl:
+        if (spec == CX_CXXPublic)
+        result = _("4");
+
+        else if (spec == CX_CXXProtected)
+        result = _("3");
+
+        else if (spec == CX_CXXPrivate)
+        result = _("2");
+
+        else if (spec == CX_CXXInvalidAccessSpecifier)
         result = _("1");
         break;
 
     case CXCursor_Destructor:
+        if (spec == CX_CXXPublic)
         result = _("10");
+
+        else if (spec == CX_CXXProtected)
+        result = _("9");
+
+        else if (spec == CX_CXXPrivate)
+        result = _("8");
         break;
 
     }
@@ -340,6 +391,7 @@ wxString getImageNum(CXCursorKind kind)
     return result;
 
 }
+
 
 
 void ClangComplete::doCodeComplete()
@@ -367,6 +419,8 @@ void ClangComplete::doCodeComplete()
 
 
 
+
+
     int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
 
 
@@ -378,6 +432,8 @@ void ClangComplete::doCodeComplete()
 
 
     CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
+
+
 
     int pos   = control->GetCurrentPos();
     int start = control->WordStartPosition(pos, true);
@@ -398,10 +454,13 @@ void ClangComplete::doCodeComplete()
         CXCompletionResult result = results->Results[i];
         CXCompletionString str = result.CompletionString;
         CXCursorKind kind = result.CursorKind;
-        wxString type = getImageNum(kind);
+        int blah = result.CursorAccess;
+
+        wxString type = getImageNum(kind,result.CursorAccess);
         int numOfChunks = clang_getNumCompletionChunks(str);
 
         wxString resulting = _("");
+        //resulting<<blah;
 
         //CXString spell = clang_getCursorKindSpelling(kind);
         //const char* spellChar = clang_getCString(spell);
@@ -510,8 +569,11 @@ void ClangComplete::OnAttach()
     fileProcessed = false;
 
 
+
+
     m_pImageList = new wxImageList(16, 16);
     wxBitmap bmp;
+
     wxString prefix = ConfigManager::GetDataFolder() + _T("/images/codecompletion/");
     // bitmaps must be added by order of PARSER_IMG_* consts
     bmp = cbLoadBitmap(prefix + _T("class_folder.png"), wxBITMAP_TYPE_PNG);
