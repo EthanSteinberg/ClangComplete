@@ -18,6 +18,10 @@
 #include <editormanager.h>
 #include <configmanager.h>
 #include <wx/imaglist.h>
+
+#include <algorithm>
+
+
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
 
@@ -226,8 +230,7 @@ void ClangComplete::InitializeTU()
 
     cbStyledTextCtrl* control  = editor->GetControl();
 
-    for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
-        control->RegisterImage(i,m_pImageList->GetBitmap(i));
+
 
 
     wxString text = control->GetText();
@@ -392,16 +395,40 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
 
 }
 
-
-
-void ClangComplete::doCodeComplete()
+struct Result
 {
+    int rank;
+    wxString string;
+
+
+
+    bool operator<(const Result& other) const
+    {
+        int diff = std::abs(rank - other.rank);
+
+        if (other.rank - rank > 1)
+        return true;
+
+        else if (diff <= 1 && string < other.string)
+        return true;
+
+        else
+        return false;
+    }
+};
+
+ int ClangComplete::CodeComplete()
+{
+
+
     if (!fileProcessed)
     {
 
         Manager::Get()->GetLogManager()->Log(_("Not done"));
-        return;
+        return 0;
     }
+
+
 
     cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
     cbStyledTextCtrl *control = editor->GetControl();
@@ -411,6 +438,9 @@ void ClangComplete::doCodeComplete()
 
     wxString text = control->GetText();
     wxCharBuffer textBuf = text.ToUTF8();
+
+      for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
+        control->RegisterImage(i,m_pImageList->GetBitmap(i));
 
     int length = control->GetLength();
 
@@ -444,11 +474,25 @@ void ClangComplete::doCodeComplete()
 
 
     int numResults = results->NumResults;
-    clang_sortCodeCompletionResults(results->Results,results->NumResults);
 
+
+
+    std::vector<Result> sortedResults;
+
+  //  clang_sortCodeCompletionResults(results->Results,results->NumResults);
+
+//    std::vector<CXCompletionResult> sortedResults;
+//    for (int i = 0; i < numResults; i++)
+//    {
+//        sortedResults.push_back(results->Results[i]);
+//    }
+//
+//    std::sort(sortedResults.begin(),sortedResults.end(),comparison);
+//
 
     for (int i = 0; i < numResults; i++)
     {
+
 
 
         CXCompletionResult result = results->Results[i];
@@ -459,17 +503,19 @@ void ClangComplete::doCodeComplete()
         wxString type = getImageNum(kind,result.CursorAccess);
         int numOfChunks = clang_getNumCompletionChunks(str);
 
-        wxString resulting = _("");
+        wxString resulting;
+
         //resulting<<blah;
 
         //CXString spell = clang_getCursorKindSpelling(kind);
         //const char* spellChar = clang_getCString(spell);
-        //wxString resulting = wxString(spellChar,wxConvUTF8);
-        //  resulting << clang_getCompletionPriority(str);
+//        wxString resulting = wxString(spellChar,wxConvUTF8);
+        // resulting << clang_getCompletionPriority(str);
 
-        //  if (clang_getCompletionAvailability(str) != CXAvailability_Available)
-        // resulting<<_("NotEvenThere");
-        // resulting << _(":");
+       if (clang_getCompletionAvailability(str) != CXAvailability_Available)
+            break;
+//         resulting<<_("NotEvenThere");
+//         resulting << _(":");
 
         for (int i =0 ; i< numOfChunks; i++)
         {
@@ -480,33 +526,45 @@ void ClangComplete::doCodeComplete()
 
                 CXString str2 = clang_getCompletionChunkText(str,i);
                 const char* str3 = clang_getCString(str2);
-                resulting += wxString(str3,wxConvUTF8) + _("?") + type;
+                resulting = wxString(str3,wxConvUTF8) + _("?") + type;
+               // break;
             }
 
 
 
         }
+        Result endResult = {clang_getCompletionPriority(str),resulting };
+        sortedResults.push_back(endResult);
+
+        resulting<< clang_getCompletionPriority(str);
         Manager::Get()->GetLogManager()->Log(resulting);
-        items.Add(resulting);
+       // items.Add(resulting);
 
     }
+
+    std::sort(sortedResults.begin(),sortedResults.end());
+
+    for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end();iter++)
+    {
+        items.Add(iter->string);
+
+    }
+
+
     clang_disposeCodeCompleteResults(results);
-
-
     wxString final = GetStringFromArray(items, _(" "));
-
-
-
 
 
     //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
     control->AutoCompShow(pos-start,final );
     // Manager::Get()->GetLogManager()->Log(result);
+
+    return 0;
 }
 
 void ClangComplete::OnCodeComplete(wxCommandEvent &evt)
 {
-    doCodeComplete();
+    CodeComplete();
 }
 
 void ClangComplete::BuildMenu(wxMenuBar *menuBar)
@@ -531,7 +589,7 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
         if (ch == '.' || (ch == ':' && previousChar == ':') || (ch == '>' && previousChar == '-'))
         {
-            doCodeComplete();
+            CodeComplete();
 
         }
 

@@ -22,7 +22,7 @@
 #include <codeblocks/logmanager.h>
 #include <codeblocks/editor_hooks.h>
 #include <clang-c/Index.h>
-class ClangComplete : public cbPlugin
+class ClangComplete : public cbCodeCompletionPlugin
 {
     public:
     wxImageList* m_pImageList;
@@ -44,9 +44,19 @@ void OnStuff(cbEditor *editor, wxScintillaEvent& event);
 
 void threadDone(wxCommandEvent &evt);
 
-void doCodeComplete();
+ int CodeComplete();
 
 bool fileProcessed;
+
+ void ShowCallTip()
+ {
+
+ }
+
+ wxArrayString GetCallTips()
+ {
+
+ }
 
 
         /** This method is called by Code::Blocks and is used by the plugin
