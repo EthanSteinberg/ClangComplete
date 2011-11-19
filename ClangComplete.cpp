@@ -52,6 +52,7 @@ static const char * cpp_keyword_xpm[] =
 
 
 
+
 DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
 
 DEFINE_EVENT_TYPE(wxEVT_MY_EVENT)
@@ -317,76 +318,76 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
     {
     case CXCursor_CXXMethod:
         if (spec == CX_CXXPublic)
-        result = _("13");
+            result = _("13");
 
         else if (spec == CX_CXXProtected)
-        result = _("12");
+            result = _("12");
 
         else if (spec == CX_CXXPrivate)
-        result = _("11");
+            result = _("11");
 
         break;
 
     case CXCursor_FieldDecl:
         if (spec == CX_CXXPublic)
-        result = _("16");
+            result = _("16");
 
         else if (spec == CX_CXXProtected)
-        result = _("15");
+            result = _("15");
 
         else if (spec == CX_CXXPrivate)
-        result = _("14");
+            result = _("14");
         break;
 
 
     case CXCursor_EnumDecl:
         if (spec == CX_CXXPublic)
-        result = _("21");
+            result = _("21");
 
         else if (spec == CX_CXXProtected)
-        result = _("20");
+            result = _("20");
 
         else if (spec == CX_CXXPrivate)
-        result = _("19");
+            result = _("19");
 
         else if (spec == CX_CXXInvalidAccessSpecifier)
-        result = _("18");;
+            result = _("18");;
         break;
 
     case CXCursor_Constructor:
         if (spec == CX_CXXPublic)
-        result = _("7");
+            result = _("7");
 
         else if (spec == CX_CXXProtected)
-        result = _("6");
+            result = _("6");
 
         else if (spec == CX_CXXPrivate)
-        result = _("5");
+            result = _("5");
         break;
 
     case CXCursor_ClassDecl:
         if (spec == CX_CXXPublic)
-        result = _("4");
+            result = _("4");
 
         else if (spec == CX_CXXProtected)
-        result = _("3");
+            result = _("3");
 
         else if (spec == CX_CXXPrivate)
-        result = _("2");
+            result = _("2");
 
         else if (spec == CX_CXXInvalidAccessSpecifier)
-        result = _("1");
+            result = _("1");
         break;
 
     case CXCursor_Destructor:
         if (spec == CX_CXXPublic)
-        result = _("10");
+            result = _("10");
 
         else if (spec == CX_CXXProtected)
-        result = _("9");
+            result = _("9");
 
         else if (spec == CX_CXXPrivate)
-        result = _("8");
+            result = _("8");
         break;
 
     }
@@ -407,17 +408,17 @@ struct Result
         int diff = std::abs(rank - other.rank);
 
         if (other.rank - rank > 1)
-        return true;
+            return true;
 
         else if (diff <= 1 && string < other.string)
-        return true;
+            return true;
 
         else
-        return false;
+            return false;
     }
 };
 
- int ClangComplete::CodeComplete()
+int ClangComplete::CodeComplete()
 {
 
 
@@ -439,7 +440,7 @@ struct Result
     wxString text = control->GetText();
     wxCharBuffer textBuf = text.ToUTF8();
 
-      for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
+    for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
         control->RegisterImage(i,m_pImageList->GetBitmap(i));
 
     int length = control->GetLength();
@@ -479,17 +480,6 @@ struct Result
 
     std::vector<Result> sortedResults;
 
-  //  clang_sortCodeCompletionResults(results->Results,results->NumResults);
-
-//    std::vector<CXCompletionResult> sortedResults;
-//    for (int i = 0; i < numResults; i++)
-//    {
-//        sortedResults.push_back(results->Results[i]);
-//    }
-//
-//    std::sort(sortedResults.begin(),sortedResults.end(),comparison);
-//
-
     for (int i = 0; i < numResults; i++)
     {
 
@@ -505,6 +495,7 @@ struct Result
 
         wxString resulting;
 
+
         //resulting<<blah;
 
         //CXString spell = clang_getCursorKindSpelling(kind);
@@ -512,10 +503,11 @@ struct Result
 //        wxString resulting = wxString(spellChar,wxConvUTF8);
         // resulting << clang_getCompletionPriority(str);
 
-       if (clang_getCompletionAvailability(str) != CXAvailability_Available)
+        if (clang_getCompletionAvailability(str) != CXAvailability_Available)
             break;
-//         resulting<<_("NotEvenThere");
-//         resulting << _(":");
+        // resulting<< clang_getCompletionAvailability(str);
+        // resulting << _(":");
+
 
         for (int i =0 ; i< numOfChunks; i++)
         {
@@ -526,25 +518,36 @@ struct Result
 
                 CXString str2 = clang_getCompletionChunkText(str,i);
                 const char* str3 = clang_getCString(str2);
+
                 resulting = wxString(str3,wxConvUTF8) + _("?") + type;
-               // break;
+                clang_disposeString(str2);
+
+                break;
             }
 
 
 
         }
+
+        if (resulting.GetChar(0) == '_')
+        {
+
+            //Manager::Get()->GetLogManager()->Log(_("It is an internal thing") + resulting);
+            continue;
+        }
+
         Result endResult = {clang_getCompletionPriority(str),resulting };
         sortedResults.push_back(endResult);
 
         resulting<< clang_getCompletionPriority(str);
         Manager::Get()->GetLogManager()->Log(resulting);
-       // items.Add(resulting);
+        //items.Add(resulting);
 
     }
 
     std::sort(sortedResults.begin(),sortedResults.end());
 
-    for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end();iter++)
+    for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end(); iter++)
     {
         items.Add(iter->string);
 
@@ -555,9 +558,18 @@ struct Result
     wxString final = GetStringFromArray(items, _(" "));
 
 
+
     //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
+    control->AutoCompSetCancelAtStart(false);
+    control->AutoCompSetAutoHide(true);
+   // final.RemoveLast();
+
     control->AutoCompShow(pos-start,final );
-    // Manager::Get()->GetLogManager()->Log(result);
+    wxString nums = _("pos: ");
+    nums<<pos ;
+    nums<<_(" start:");
+    nums<<start;
+     Manager::Get()->GetLogManager()->Log(nums);
 
     return 0;
 }
