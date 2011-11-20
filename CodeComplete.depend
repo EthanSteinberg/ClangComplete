@@ -2325,7 +2325,7 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
-1321659935 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+1321757030 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
 	<sdk.h>
 	<configurationpanel.h>
 	"ClangComplete.h"
@@ -2357,4 +2357,8 @@
 	"wx/object.h"
 	"wx/string.h"
 	"wx/arrstr.h"
+
+1321712060 /usr/local/include/codeblocks/wxscintilla/include/wx/wxscintilla.h
+	<wx/wx.h>
+	<wx/dnd.h>
 

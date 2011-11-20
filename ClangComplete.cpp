@@ -317,7 +317,8 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
     switch(kind)
     {
     case CXCursor_CXXMethod:
-        if (spec == CX_CXXPublic)
+    case CXCursor_FunctionDecl:
+        if (spec == CX_CXXPublic || spec == CX_CXXInvalidAccessSpecifier)
             result = _("13");
 
         else if (spec == CX_CXXProtected)
@@ -341,7 +342,7 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
 
 
     case CXCursor_EnumDecl:
-        if (spec == CX_CXXPublic)
+        if (spec == CX_CXXPublic || spec == CX_CXXInvalidAccessSpecifier)
             result = _("21");
 
         else if (spec == CX_CXXProtected)
@@ -349,13 +350,15 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
 
         else if (spec == CX_CXXPrivate)
             result = _("19");
-
-        else if (spec == CX_CXXInvalidAccessSpecifier)
-            result = _("18");;
         break;
 
+    case CXCursor_EnumConstantDecl:
+        result = _("22");
+        break;
+
+
     case CXCursor_Constructor:
-        if (spec == CX_CXXPublic)
+        if (spec == CX_CXXPublic || spec == CX_CXXInvalidAccessSpecifier)
             result = _("7");
 
         else if (spec == CX_CXXProtected)
@@ -366,6 +369,7 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
         break;
 
     case CXCursor_ClassDecl:
+    case CXCursor_StructDecl:
         if (spec == CX_CXXPublic)
             result = _("4");
 
@@ -390,6 +394,18 @@ wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
             result = _("8");
         break;
 
+    case CXCursor_VarDecl:
+        result = _("16");
+        break;
+
+    case CXCursor_MacroDefinition:
+        result = _("35");
+        break;
+
+    default:
+        result = _("40");
+        break;
+
     }
 
     return result;
@@ -408,7 +424,7 @@ struct Result
         int diff = std::abs(rank - other.rank);
 
         if (other.rank - rank > 1)
-            return true;
+            return false;
 
         else if (diff <= 1 && string < other.string)
             return true;
@@ -440,8 +456,10 @@ int ClangComplete::CodeComplete()
     wxString text = control->GetText();
     wxCharBuffer textBuf = text.ToUTF8();
 
+
     for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
         control->RegisterImage(i,m_pImageList->GetBitmap(i));
+
 
     int length = control->GetLength();
 
@@ -498,9 +516,9 @@ int ClangComplete::CodeComplete()
 
         //resulting<<blah;
 
-        //CXString spell = clang_getCursorKindSpelling(kind);
-        //const char* spellChar = clang_getCString(spell);
-//        wxString resulting = wxString(spellChar,wxConvUTF8);
+        CXString spell = clang_getCursorKindSpelling(kind);
+        const char* spellChar = clang_getCString(spell);
+      //  wxString resulting = wxString(spellChar,wxConvUTF8);
         // resulting << clang_getCompletionPriority(str);
 
         if (clang_getCompletionAvailability(str) != CXAvailability_Available)
@@ -511,7 +529,7 @@ int ClangComplete::CodeComplete()
 
         for (int i =0 ; i< numOfChunks; i++)
         {
-            if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
+            if (true)//if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
             {
 
 
@@ -519,15 +537,19 @@ int ClangComplete::CodeComplete()
                 CXString str2 = clang_getCompletionChunkText(str,i);
                 const char* str3 = clang_getCString(str2);
 
-                resulting = wxString(str3,wxConvUTF8) + _("?") + type;
+                resulting += wxString(str3,wxConvUTF8);// + _("?") + type;;
+               // resulting<< resulting.Length();//
+               // resulting<<_(":");
+                //resulting<< strlen(str3);
                 clang_disposeString(str2);
 
-                break;
+                //break;
             }
 
 
 
         }
+
 
         if (resulting.GetChar(0) == '_')
         {
@@ -539,7 +561,7 @@ int ClangComplete::CodeComplete()
         Result endResult = {clang_getCompletionPriority(str),resulting };
         sortedResults.push_back(endResult);
 
-        resulting<< clang_getCompletionPriority(str);
+       // resulting<< clang_getCompletionPriority(str);
         Manager::Get()->GetLogManager()->Log(resulting);
         //items.Add(resulting);
 
@@ -547,29 +569,48 @@ int ClangComplete::CodeComplete()
 
     std::sort(sortedResults.begin(),sortedResults.end());
 
-    for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end(); iter++)
-    {
-        items.Add(iter->string);
 
+    //items.Add(_("What"));
+    //items.Add(_("two2"));
+    int i = 0;
+    for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end(); iter++)
+    {i++;
+
+
+            items.Add(iter->string);
     }
 
 
+    wxArrayString foo;
+    foo.Add(_("What the heck"));
+    foo.Add(_("two"));
+    foo.Add(_("Hello"));
+    foo.Add(_("Hels"));
+    foo.Add(_("Hi"));
+    foo.Add(_("tuesday"));
+
+
     clang_disposeCodeCompleteResults(results);
-    wxString final = GetStringFromArray(items, _(" "));
+    wxString final = GetStringFromArray(items, _("|"));
+    final.RemoveLast();
 
 
 
     //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
+    control->AutoCompSetIgnoreCase(true);
     control->AutoCompSetCancelAtStart(false);
-    control->AutoCompSetAutoHide(true);
+    control->AutoCompSetAutoHide(false);
+    control->AutoCompSetSeparator('|');
+    control->AutoCompStops(_(""));
    // final.RemoveLast();
 
+//final = _("Hello boo");
     control->AutoCompShow(pos-start,final );
     wxString nums = _("pos: ");
     nums<<pos ;
     nums<<_(" start:");
     nums<<start;
-     Manager::Get()->GetLogManager()->Log(nums);
+     Manager::Get()->GetLogManager()->Log(final);
 
     return 0;
 }
@@ -726,6 +767,8 @@ void ClangComplete::OnAttach()
     m_pImageList->Add(bmp); // PARSER_IMG_MACRO_PUBLIC
     bmp = cbLoadBitmap(prefix + _T("macro_folder.png"), wxBITMAP_TYPE_PNG);
     m_pImageList->Add(bmp); // PARSER_IMG_MACRO_FOLDER
+    bmp = wxImage(cpp_keyword_xpm);
+    m_pImageList->Add(bmp);
 
 
 
