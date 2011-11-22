@@ -2325,7 +2325,7 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
-1321993453 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+1321998735 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
 	<sdk.h>
 	<configurationpanel.h>
 	"ClangComplete.h"
@@ -2344,8 +2344,9 @@
 	<configmanager.h>
 	<wx/imaglist.h>
 	<algorithm>
+	"Result.h"
 
-1321599417 /home/ethan/Programming/ClangComplete/ClangComplete.h
+1321996606 /home/ethan/Programming/ClangComplete/ClangComplete.h
 	<wx/wxprec.h>
 	<wx/wx.h>
 	<cbplugin.h>
@@ -2361,4 +2362,13 @@
 1321712060 /usr/local/include/codeblocks/wxscintilla/include/wx/wxscintilla.h
 	<wx/wx.h>
 	<wx/dnd.h>
+
+1321998672 /home/ethan/Programming/ClangComplete/Result.h
+	<wx/string.h>
+	<clang-c/Index.h>
+
+1321999110 source:/home/ethan/Programming/ClangComplete/Result.cpp
+	"Result.h"
+	<clang-c/Index.h>
+	<wx/intl.h>
 

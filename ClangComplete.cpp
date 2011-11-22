@@ -21,6 +21,8 @@
 
 #include <algorithm>
 
+#include "Result.h"
+
 
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
@@ -262,11 +264,6 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
         InitializeTU();
 
         waitingForProject = false;
-
-
-
-
-
     }
 
 }
@@ -309,167 +306,14 @@ ClangComplete::~ClangComplete()
 {
 }
 
-wxString getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
+
+CXCodeCompleteResults* ClangComplete::getResults(cbEditor* editor, cbStyledTextCtrl* control)
 {
-    wxString result = _("0");
-
-
-    switch(kind)
-    {
-    case CXCursor_CXXMethod:
-    case CXCursor_FunctionDecl:
-        if (spec == CX_CXXPublic || spec == CX_CXXInvalidAccessSpecifier)
-            result = _("13");
-
-        else if (spec == CX_CXXProtected)
-            result = _("12");
-
-        else if (spec == CX_CXXPrivate)
-            result = _("11");
-
-        break;
-
-    case CXCursor_FieldDecl:
-        if (spec == CX_CXXPublic)
-            result = _("16");
-
-        else if (spec == CX_CXXProtected)
-            result = _("15");
-
-        else if (spec == CX_CXXPrivate)
-            result = _("14");
-        break;
-
-
-    case CXCursor_EnumDecl:
-        if (spec == CX_CXXPublic || spec == CX_CXXInvalidAccessSpecifier)
-            result = _("21");
-
-        else if (spec == CX_CXXProtected)
-            result = _("20");
-
-        else if (spec == CX_CXXPrivate)
-            result = _("19");
-        break;
-
-    case CXCursor_EnumConstantDecl:
-        result = _("22");
-        break;
-
-
-    case CXCursor_Constructor:
-        if (spec == CX_CXXPublic || spec == CX_CXXInvalidAccessSpecifier)
-            result = _("7");
-
-        else if (spec == CX_CXXProtected)
-            result = _("6");
-
-        else if (spec == CX_CXXPrivate)
-            result = _("5");
-        break;
-
-    case CXCursor_ClassDecl:
-    case CXCursor_StructDecl:
-        if (spec == CX_CXXPublic)
-            result = _("4");
-
-        else if (spec == CX_CXXProtected)
-            result = _("3");
-
-        else if (spec == CX_CXXPrivate)
-            result = _("2");
-
-        else if (spec == CX_CXXInvalidAccessSpecifier)
-            result = _("1");
-        break;
-
-    case CXCursor_Destructor:
-        if (spec == CX_CXXPublic)
-            result = _("10");
-
-        else if (spec == CX_CXXProtected)
-            result = _("9");
-
-        else if (spec == CX_CXXPrivate)
-            result = _("8");
-        break;
-
-    case CXCursor_VarDecl:
-        result = _("16");
-        break;
-
-    case CXCursor_MacroDefinition:
-        result = _("35");
-        break;
-
-    default:
-        result = _("40");
-        break;
-
-    }
-
-    return result;
-
-}
-
-struct Result
-{
-    int rank;
-    wxString string;
-
-
-
-   /* bool operator<(const Result& other) const
-    {
-        int diff = std::abs(rank - other.rank);
-
-        if (other.rank - rank > 1)
-            return true;
-
-        else if (diff <= 1 && string < other.string)
-            return true;
-
-        else
-            return false;
-    }*/
-
-    bool operator<(const Result& other) const
-    {
-        if (string.Upper() < other.string.Upper())
-         return true;
-
-        return false;
-
-
-    }
-};
-
-int ClangComplete::CodeComplete()
-{
-
-
-    if (!fileProcessed)
-    {
-
-        Manager::Get()->GetLogManager()->Log(_("Not done"));
-        return 0;
-    }
-
-
-
-    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
-    cbStyledTextCtrl *control = editor->GetControl();
-
     wxString name = editor->GetFilename();
     wxCharBuffer buffer = name.ToUTF8();
 
     wxString text = control->GetText();
     wxCharBuffer textBuf = text.ToUTF8();
-
-
-    for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
-        control->RegisterImage(i,m_pImageList->GetBitmap(i));
-
 
     int length = control->GetLength();
 
@@ -478,127 +322,58 @@ int ClangComplete::CodeComplete()
 
 
 
-
-
-    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-
-
-
-
-
     int line = control->GetCurrentLine() +1;
     int column = control->GetColumn(control->GetCurrentPos()) +2;
 
+    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
+
+    return clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
+
+}
 
 
-
-
-
-    int pos   = control->GetCurrentPos();
-    int start = control->WordStartPosition(pos, true);
-
-    const int style = control->GetStyleAt(pos);
-    wxString stu;
-    stu<<style;
-    Manager::Get()->GetLogManager()->Log(stu);
-    if (style != 0)
-        return 0;
-
-
-    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
-
-    wxArrayString items;
-
-
-
-
+std::vector<Result> getSortedResults(CXCodeCompleteResults *results)
+{
     int numResults = results->NumResults;
-
-
 
     std::vector<Result> sortedResults;
 
     for (int i = 0; i < numResults; i++)
     {
 
-
-
         CXCompletionResult result = results->Results[i];
-        CXCompletionString str = result.CompletionString;
-        CXCursorKind kind = result.CursorKind;
-        int blah = result.CursorAccess;
 
-        wxString type = getImageNum(kind,result.CursorAccess);
-        int numOfChunks = clang_getNumCompletionChunks(str);
+        Result endResult(result);
 
-        wxString resulting;
+        if (endResult.isGood())
+            sortedResults.push_back(endResult);
 
-
-        //resulting<<blah;
-
-        CXString spell = clang_getCursorKindSpelling(kind);
-        const char* spellChar = clang_getCString(spell);
-        //  wxString resulting = wxString(spellChar,wxConvUTF8);
-        // resulting << clang_getCompletionPriority(str);
-
-        if (clang_getCompletionAvailability(str) != CXAvailability_Available)
-            continue;
-        // resulting<< clang_getCompletionAvailability(str);
-        // resulting << _(":");
-
-
-        for (int i =0 ; i< numOfChunks; i++)
-        {
-            if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
-            {
-
-
-
-                CXString str2 = clang_getCompletionChunkText(str,i);
-                const char* str3 = clang_getCString(str2);
-
-                resulting += wxString(str3,wxConvUTF8) + _("?") + type;
-                // resulting<< resulting.Length();//
-                // resulting<<_(":");
-                //resulting<< strlen(str3);
-                clang_disposeString(str2);
-
-                break;
-            }
-
-
-
-        }
-
-
-        if (resulting.GetChar(0) == '_')
-        {
-            continue;
-        }
-
-        Result endResult = {clang_getCompletionPriority(str),resulting };
-        sortedResults.push_back(endResult);
-
-        // resulting<< clang_getCompletionPriority(str);
-        Manager::Get()->GetLogManager()->Log(resulting);
+        //Manager::Get()->GetLogManager()->Log(resulting);
 
     }
     clang_disposeCodeCompleteResults(results);
 
     std::sort(sortedResults.begin(),sortedResults.end());
 
+    return sortedResults;
+
+}
+
+void showResults(const std::vector<Result> sortedResults, cbStyledTextCtrl * control)
+{
+    int pos   = control->GetCurrentPos();
+    int start = control->WordStartPosition(pos, true);
+
 
     wxString textString = control->GetTextRange(start,pos);
 
+    wxArrayString items;
 
-    for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end(); iter++)
+    for (std::vector<Result>::const_iterator iter = sortedResults.begin(); iter != sortedResults.end(); iter++)
     {
         if (iter->string.StartsWith(textString))
-        items.Add(iter->string);
+            items.Add(iter->string);
     }
-
-
-
 
 
     wxString final = GetStringFromArray(items, _T("\n"));
@@ -617,8 +392,46 @@ int ClangComplete::CodeComplete()
     control->AutoCompShow(pos-start,final );
     Manager::Get()->GetLogManager()->Log(textString);
 
+}
+
+int ClangComplete::CodeComplete()
+{
+
+
+    if (!fileProcessed)
+    {
+
+        Manager::Get()->GetLogManager()->Log(_("Not done"));
+        return 0;
+    }
+
+
+
+    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+    cbStyledTextCtrl *control = editor->GetControl();
+
+
+    for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
+        control->RegisterImage(i,m_pImageList->GetBitmap(i));
+
+
+    int pos  = control->GetCurrentPos();
+
+
+    const int style = control->GetStyleAt(pos);
+    if (style != 0)
+        return 0;
+
+
+    CXCodeCompleteResults* results= getResults(editor,control);
+
+    std::vector<Result> sortedResults = getSortedResults(results);
+    showResults(sortedResults,control);
+
+
     return 0;
 }
+
 
 void ClangComplete::OnCodeComplete(wxCommandEvent &evt)
 {
@@ -644,6 +457,10 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
         cbStyledTextCtrl* control  = editor->GetControl();
         const wxChar previousChar = control->GetCharAt(control->GetCurrentPos() -2);
 
+        int pos   = control->GetCurrentPos();
+        int start = control->WordStartPosition(pos, true);
+
+
 
         if (ch == '.' || (ch == ':' && previousChar == ':') || (ch == '>' && previousChar == '-'))
         {
@@ -651,28 +468,17 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
         }
 
+        else if (pos - start >= 3)
+            CodeComplete();
+
+
     }
-
-
-
 }
 
 
 void ClangComplete::OnAttach()
 {
-    // do whatever initialization you need for your plugin
-    // NOTE: after this function, the inherited member variable
-    // m_IsAttached will be TRUE...
-    // You should check for it in other functions, because if it
-    // is FALSE, it means that the application did *not* "load"
-    // (see: does not need) this plugin...
 
-
-//    Manager::GetLogManager()->Log(_("Hello?"));
-
-//wxCommandEvent com()
-
-//        Manager::Get()->GetEditorManager()->OnSave()
     EditorHooks::HookFunctorBase* myhook = new EditorHooks::HookFunctor<ClangComplete>(this, &ClangComplete::OnStuff);
     hookId = EditorHooks::RegisterHook(myhook);
 
@@ -785,16 +591,10 @@ void ClangComplete::OnAttach()
 
 void ClangComplete::OnRelease(bool appShutDown)
 {
-    // do de-initialization for your plugin
-    // if appShutDown is true, the plugin is unloaded because Code::Blocks is being shut down,
-    // which means you must not use any of the SDK Managers
-    // NOTE: after this function, the inherited member variable
-    // m_IsAttached will be FALSE...
     EditorHooks::UnregisterHook(hookId, true);
+
     if (unitCreated)
     {
-
-
         clang_disposeTranslationUnit(unit);
         clang_disposeIndex(index);
     }

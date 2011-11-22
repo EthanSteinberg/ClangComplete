@@ -22,6 +22,7 @@
 #include <codeblocks/logmanager.h>
 #include <codeblocks/editor_hooks.h>
 #include <clang-c/Index.h>
+class cbStyledTextCtrl;
 class ClangComplete : public cbCodeCompletionPlugin
 {
     public:
@@ -47,6 +48,9 @@ void threadDone(wxCommandEvent &evt);
  int CodeComplete();
 
 bool fileProcessed;
+
+
+CXCodeCompleteResults* getResults(cbEditor* editor, cbStyledTextCtrl* control);
 
  void ShowCallTip()
  {
