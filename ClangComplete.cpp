@@ -419,18 +419,28 @@ struct Result
 
 
 
-    bool operator<(const Result& other) const
+   /* bool operator<(const Result& other) const
     {
         int diff = std::abs(rank - other.rank);
 
         if (other.rank - rank > 1)
-            return false;
+            return true;
 
         else if (diff <= 1 && string < other.string)
             return true;
 
         else
             return false;
+    }*/
+
+    bool operator<(const Result& other) const
+    {
+        if (string.Upper() < other.string.Upper())
+         return true;
+
+        return false;
+
+
     }
 };
 
@@ -480,12 +490,22 @@ int ClangComplete::CodeComplete()
     int column = control->GetColumn(control->GetCurrentPos()) +2;
 
 
-    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
+
 
 
 
     int pos   = control->GetCurrentPos();
     int start = control->WordStartPosition(pos, true);
+
+    const int style = control->GetStyleAt(pos);
+    wxString stu;
+    stu<<style;
+    Manager::Get()->GetLogManager()->Log(stu);
+    if (style != 0)
+        return 0;
+
+
+    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),line,column, &file, 1 , clang_defaultCodeCompleteOptions());
 
     wxArrayString items;
 
@@ -518,18 +538,18 @@ int ClangComplete::CodeComplete()
 
         CXString spell = clang_getCursorKindSpelling(kind);
         const char* spellChar = clang_getCString(spell);
-      //  wxString resulting = wxString(spellChar,wxConvUTF8);
+        //  wxString resulting = wxString(spellChar,wxConvUTF8);
         // resulting << clang_getCompletionPriority(str);
 
         if (clang_getCompletionAvailability(str) != CXAvailability_Available)
-            break;
+            continue;
         // resulting<< clang_getCompletionAvailability(str);
         // resulting << _(":");
 
 
         for (int i =0 ; i< numOfChunks; i++)
         {
-            if (true)//if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
+            if (clang_getCompletionChunkKind(str,i) == CXCompletionChunk_TypedText)
             {
 
 
@@ -537,13 +557,13 @@ int ClangComplete::CodeComplete()
                 CXString str2 = clang_getCompletionChunkText(str,i);
                 const char* str3 = clang_getCString(str2);
 
-                resulting += wxString(str3,wxConvUTF8);// + _("?") + type;;
-               // resulting<< resulting.Length();//
-               // resulting<<_(":");
+                resulting += wxString(str3,wxConvUTF8) + _("?") + type;
+                // resulting<< resulting.Length();//
+                // resulting<<_(":");
                 //resulting<< strlen(str3);
                 clang_disposeString(str2);
 
-                //break;
+                break;
             }
 
 
@@ -553,64 +573,49 @@ int ClangComplete::CodeComplete()
 
         if (resulting.GetChar(0) == '_')
         {
-
-            //Manager::Get()->GetLogManager()->Log(_("It is an internal thing") + resulting);
             continue;
         }
 
         Result endResult = {clang_getCompletionPriority(str),resulting };
         sortedResults.push_back(endResult);
 
-       // resulting<< clang_getCompletionPriority(str);
+        // resulting<< clang_getCompletionPriority(str);
         Manager::Get()->GetLogManager()->Log(resulting);
-        //items.Add(resulting);
 
     }
+    clang_disposeCodeCompleteResults(results);
 
     std::sort(sortedResults.begin(),sortedResults.end());
 
 
-    //items.Add(_("What"));
-    //items.Add(_("two2"));
-    int i = 0;
+    wxString textString = control->GetTextRange(start,pos);
+
+
     for (std::vector<Result>::iterator iter = sortedResults.begin(); iter != sortedResults.end(); iter++)
-    {i++;
-
-
-            items.Add(iter->string);
+    {
+        if (iter->string.StartsWith(textString))
+        items.Add(iter->string);
     }
 
 
-    wxArrayString foo;
-    foo.Add(_("What the heck"));
-    foo.Add(_("two"));
-    foo.Add(_("Hello"));
-    foo.Add(_("Hels"));
-    foo.Add(_("Hi"));
-    foo.Add(_("tuesday"));
 
 
-    clang_disposeCodeCompleteResults(results);
-    wxString final = GetStringFromArray(items, _("|"));
+
+    wxString final = GetStringFromArray(items, _T("\n"));
     final.RemoveLast();
 
 
 
-    //control->CallTipShow(control->GetCurrentPos(), _("This is confusing"));
     control->AutoCompSetIgnoreCase(true);
-    control->AutoCompSetCancelAtStart(false);
-    control->AutoCompSetAutoHide(false);
-    control->AutoCompSetSeparator('|');
+    control->AutoCompSetCancelAtStart(true);
+    control->AutoCompSetAutoHide(true);
+    control->AutoCompSetSeparator('\n');
     control->AutoCompStops(_(""));
-   // final.RemoveLast();
+    control->AutoCompSetFillUps(_(""));
 
-//final = _("Hello boo");
+
     control->AutoCompShow(pos-start,final );
-    wxString nums = _("pos: ");
-    nums<<pos ;
-    nums<<_(" start:");
-    nums<<start;
-     Manager::Get()->GetLogManager()->Log(final);
+    Manager::Get()->GetLogManager()->Log(textString);
 
     return 0;
 }
