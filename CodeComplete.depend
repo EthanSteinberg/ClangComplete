@@ -2325,7 +2325,7 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
-1321998735 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+1322001901 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
 	<sdk.h>
 	<configurationpanel.h>
 	"ClangComplete.h"
@@ -2343,6 +2343,7 @@
 	<editormanager.h>
 	<configmanager.h>
 	<wx/imaglist.h>
+	<macrosmanager.h>
 	<algorithm>
 	"Result.h"
 

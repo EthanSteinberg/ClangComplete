@@ -19,6 +19,8 @@
 #include <configmanager.h>
 #include <wx/imaglist.h>
 
+#include <macrosmanager.h>
+
 #include <algorithm>
 
 #include "Result.h"
@@ -175,8 +177,10 @@ wxString generateCommandString()
     return tempCommand;
 }
 
-const char** generateCommandLine(wxString command,int &numOfTokens)
+const char** generateCommandLine(wxString command, int &numOfTokens)
 {
+
+
     wxStringTokenizer tokenizer(command);
     numOfTokens = tokenizer.CountTokens();
     char const** args = new  const char*[1+numOfTokens];
@@ -200,11 +204,66 @@ const char** generateCommandLine(wxString command,int &numOfTokens)
 
 }
 
+wxArrayString findCompilerIncludes(Compiler* compiler)
+{
+    wxFileName fn(wxEmptyString, compiler->GetPrograms().CPP);
+    wxString masterPath = compiler->GetMasterPath();
+    Manager::Get()->GetMacrosManager()->ReplaceMacros(masterPath);
+    fn.SetPath(masterPath);
+    fn.AppendDir(_T("bin"));
+
+    wxString cpp_compiler = fn.GetFullPath();
+
+    #ifdef __WXMSW__
+        wxString Command = cpp_compiler + _T(" -v -E -x c++ nul");
+    #else
+        wxString Command = cpp_compiler + _T(" -v -E -x c++ /dev/null");
+    #endif
+
+    wxArrayString Output,Errors;
+
+    wxExecute(Command, Output, Errors, wxEXEC_SYNC | wxEXEC_NODISABLE);
+
+    wxArrayString includeDirs;
+
+    int num = Errors.GetCount();
+    int i = 0;
+
+    while ( i < num)
+    {
+        if (Errors[i++] == _("#include <...> search starts here:"))
+            break;
+    }
+
+    while (i < num)
+    {
+        wxString result = Errors[i++];
+        if (result == _("End of search list."))
+            break;
+
+        result.Trim(true);
+        result.Trim(false);
+        includeDirs.Add(_("-I") + result);
+
+    }
+
+    return includeDirs;
+
+
+}
+
 
 
 
 void ClangComplete::InitializeTU()
 {
+
+    cbProject *project = Manager::Get()->GetProjectManager()->GetActiveProject();
+    ProjectBuildTarget *target = project->GetBuildTarget(0);
+    Compiler *compiler = CompilerFactory::GetCompiler(target->GetCompilerID());
+
+    wxArrayString otherIncludes = findCompilerIncludes(compiler);
+
 
     if (unitCreated)
     {
@@ -223,13 +282,13 @@ void ClangComplete::InitializeTU()
 
 
     wxString tempCommand = generateCommandString();
-
+    tempCommand += GetStringFromArray(otherIncludes,_(" "));
     Manager::Get()->GetLogManager()->Log(name);
     Manager::Get()->GetLogManager()->Log(tempCommand);
 
 
     int numOfTokens;
-    const char**args = generateCommandLine(tempCommand,numOfTokens);
+    const char**args = generateCommandLine(tempCommand, numOfTokens);
 
     cbStyledTextCtrl* control  = editor->GetControl();
 
@@ -463,14 +522,10 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 
         if (ch == '.' || (ch == ':' && previousChar == ':') || (ch == '>' && previousChar == '-'))
-        {
             CodeComplete();
-
-        }
 
         else if (pos - start >= 3)
             CodeComplete();
-
 
     }
 }
@@ -581,9 +636,6 @@ void ClangComplete::OnAttach()
     bmp = wxImage(cpp_keyword_xpm);
     m_pImageList->Add(bmp);
 
-
-
-    // fprintf(stderr, "This is an first\n");
 
 
 
