@@ -36,6 +36,8 @@
 		</Linker>
 		<Unit filename="ClangComplete.cpp" />
 		<Unit filename="ClangComplete.h" />
+		<Unit filename="Result.cpp" />
+		<Unit filename="Result.h" />
 		<Unit filename="manifest.xml" />
 		<Extensions>
 			<code_completion />

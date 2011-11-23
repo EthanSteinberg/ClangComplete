@@ -286,7 +286,6 @@ void ClangComplete::InitializeTU()
     Manager::Get()->GetLogManager()->Log(name);
     Manager::Get()->GetLogManager()->Log(tempCommand);
 
-
     int numOfTokens;
     const char**args = generateCommandLine(tempCommand, numOfTokens);
 
