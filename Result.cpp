@@ -126,9 +126,11 @@ int getImageNum(CXCursorKind kind, CX_CXXAccessSpecifier spec)
 
     }
 
+
     return result;
 
 }
+
 
 Result::Result(CXCompletionResult result)
 {
@@ -136,7 +138,7 @@ Result::Result(CXCompletionResult result)
     CXCompletionString str = result.CompletionString;
     CXCursorKind kind = result.CursorKind;
 
-    int type = getImageNum(kind,result.CursorAccess);
+    int type = getImageNum(kind,CX_CXXPublic);
 
     string = getCompletionString(str) + wxString::Format(_T("?%d"),type);
     rank = clang_getCompletionPriority(str);

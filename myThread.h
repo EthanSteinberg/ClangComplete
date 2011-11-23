@@ -10,12 +10,18 @@
 #include <clang-c/Index.h>
 
 
-DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
+DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, 52346)
 
 class cbPlugin;
 
 
-extern int threadDoneId;
+struct transferData
+{
+    CXTranslationUnit unit;
+    wxCharBuffer filename;
+};
+
+const int threadDoneId = 5634563;
 
 
 class myThread : public wxThread
@@ -24,20 +30,16 @@ class myThread : public wxThread
 
     CXIndex index;
     wxCharBuffer buffer;
-    wxCharBuffer textBuf;
-    int length;
     const char** args;
     int numOfTokens;
 
 public:
-    myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const wxCharBuffer& _textBuf, int _length, const char** _args, int _numOfTokens)
+    myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const char** _args, int _numOfTokens)
     {
         handle = cb;
 
         index = _index;
         buffer = _buffer;
-        textBuf = _textBuf;
-        length = _length;
         args = _args;
         numOfTokens = _numOfTokens;
 
@@ -48,7 +50,7 @@ protected:
     CXTranslationUnit threadFunc();
 
 
-    virtual ExitCode Entry();
+    virtual void* Entry();
 
 };
 

@@ -2325,7 +2325,7 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
-1322012768 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+1322026396 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
 	<sdk.h>
 	<configurationpanel.h>
 	"ClangComplete.h"
@@ -2348,7 +2348,7 @@
 	"Result.h"
 	"myThread.h"
 
-1321996606 /home/ethan/Programming/ClangComplete/ClangComplete.h
+1322025838 /home/ethan/Programming/ClangComplete/ClangComplete.h
 	<wx/wxprec.h>
 	<wx/wx.h>
 	<cbplugin.h>
@@ -2369,19 +2369,19 @@
 	<wx/string.h>
 	<clang-c/Index.h>
 
-1321999110 source:/home/ethan/Programming/ClangComplete/Result.cpp
+1322023138 source:/home/ethan/Programming/ClangComplete/Result.cpp
 	"Result.h"
 	<clang-c/Index.h>
 	<wx/intl.h>
 
-1322013062 /home/ethan/Programming/ClangComplete/myThread.h
+1322025677 /home/ethan/Programming/ClangComplete/myThread.h
 	<wx/wxprec.h>
 	<wx/wx.h>
 	<clang-c/Index.h>
 
 1322012460 /home/ethan/Programming/ClangComplete/sharedMessages.h
 
-1322013038 source:/home/ethan/Programming/ClangComplete/myThread.cpp
+1322025153 source:/home/ethan/Programming/ClangComplete/myThread.cpp
 	"myThread.h"
 	<wx/thread.h>
 	<cbplugin.h>

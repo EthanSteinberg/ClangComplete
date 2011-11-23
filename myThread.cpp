@@ -4,7 +4,6 @@
 #include <cbplugin.h>
 DEFINE_EVENT_TYPE(wxEVT_MY_EVENT)
 
-int threadDoneId = wxNewId();
 
 void freeCommandLine(const char** args, int numOfTokens)
 {
@@ -21,10 +20,9 @@ void freeCommandLine(const char** args, int numOfTokens)
 
 CXTranslationUnit myThread::threadFunc()
 {
-    CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
-    CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-    int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
+    CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, NULL,0, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+    int status = clang_reparseTranslationUnit(unit,0, NULL, clang_defaultReparseOptions(unit));
+    CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, NULL, 0, clang_defaultCodeCompleteOptions());
     clang_disposeCodeCompleteResults(results);
 
     freeCommandLine(args,numOfTokens);
@@ -34,11 +32,13 @@ CXTranslationUnit myThread::threadFunc()
 
 void* myThread::Entry()
 {
-
+    transferData* data = new transferData;
+    data->unit = threadFunc();
+    data->filename = buffer;
 
 
     wxCommandEvent event(wxEVT_MY_EVENT, threadDoneId);
-    event.SetClientData(threadFunc());
+    event.SetClientData(data);
     wxPostEvent(handle,event);
     return 0;
 

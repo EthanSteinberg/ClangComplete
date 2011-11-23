@@ -79,32 +79,38 @@ void ClangComplete::threadDone(wxCommandEvent& evt)
 {
     fileProcessed = true;
 
-    unitCreated =true;
-    unit = (CXTranslationUnit) evt.GetClientData();
 
-    Manager::Get()->GetLogManager()->Log(_("Processing done"));
+    transferData* data = (transferData*)  evt.GetClientData();
+    CXTranslationUnit unit = data->unit;
+    wxString filename = wxString(data->filename,wxConvUTF8);
+
+
+    Manager::Get()->GetLogManager()->Log(_("Processing done for ") + filename);
+
+    units.insert(std::make_pair(filename,unit));
+    free(data);
 }
 
 
-wxString generateCommandString()
-{
-    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
 
-    ProjectFile* pf = editor->GetProjectFile();
-    cbProject *project = Manager::Get()->GetProjectManager()->GetActiveProject();
+
+wxString generateCommandString(ProjectFile *file)
+{
+
+    cbProject *project = file->GetParentProject();
 
     ProjectBuildTarget *target = project->GetBuildTarget(0);
     wxString test = target->GetCompilerID();
     Compiler * comp = CompilerFactory::GetCompiler(test);
 
-    const pfDetails& pfd = pf->GetFileDetails(target);
+    const pfDetails& pfd = file->GetFileDetails(target);
 
 
     wxString Object = (comp->GetSwitches().UseFlatObjects)?pfd.object_file_flat:pfd.object_file;
 
     const CompilerTool &tool = comp->GetCompilerTool(ctCompileObjectCmd,_(".cpp"));
     wxString tempCommand = _("$options $includes");
-    comp->GenerateCommandLine(tempCommand,target,pf,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
+    comp->GenerateCommandLine(tempCommand,target,file,UnixFilename(pfd.source_file_absolute_native),Object,pfd.object_file_flat,
                               pfd.dep_file);
     return tempCommand;
 }
@@ -187,33 +193,23 @@ wxArrayString findCompilerIncludes(Compiler* compiler)
 
 
 
-void ClangComplete::InitializeTU()
+void ClangComplete::InitializeTU(ProjectFile *file)
 {
 
-    cbProject *project = Manager::Get()->GetProjectManager()->GetActiveProject();
+    cbProject *project = file->GetParentProject();
     ProjectBuildTarget *target = project->GetBuildTarget(0);
     Compiler *compiler = CompilerFactory::GetCompiler(target->GetCompilerID());
 
     wxArrayString otherIncludes = findCompilerIncludes(compiler);
 
 
-    if (unitCreated)
-    {
 
 
-        clang_disposeTranslationUnit(unit);
-        clang_disposeIndex(index);
-    }
-
-
-
-    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
-
-    wxString name = editor->GetFilename();
+    wxString name = file->file.GetFullPath();
     wxCharBuffer buffer = name.ToUTF8();
 
 
-    wxString tempCommand = generateCommandString();
+    wxString tempCommand = generateCommandString(file);
     tempCommand += GetStringFromArray(otherIncludes,_(" "));
     Manager::Get()->GetLogManager()->Log(name);
     Manager::Get()->GetLogManager()->Log(tempCommand);
@@ -221,23 +217,13 @@ void ClangComplete::InitializeTU()
     int numOfTokens;
     const char**args = generateCommandLine(tempCommand, numOfTokens);
 
-    cbStyledTextCtrl* control  = editor->GetControl();
 
 
 
 
-    wxString text = control->GetText();
-    wxCharBuffer textBuf = text.ToUTF8();
-
-    int length = control->GetLength();
 
 
-
-
-    index = clang_createIndex(0,0);
-
-
-    myThread *thread = new myThread(this,index,buffer,textBuf,length,args,numOfTokens);
+    myThread *thread = new myThread(this,index,buffer,args,numOfTokens);
     thread->Create();
     thread->Run();
 
@@ -247,14 +233,16 @@ void ClangComplete::InitializeTU()
 void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 {
 
-    // Manager::Get()->GetLogManager()->Log(_("Project open"));
-    if (waitingForProject && Manager::Get()->GetEditorManager()->GetActiveEditor() != NULL)
+
+    cbProject* project = evt.GetProject();
+
+
+    for (int i = 0; i < project->GetFilesCount(); i++)
     {
-
-        InitializeTU();
-
-        waitingForProject = false;
+        InitializeTU(project->GetFile(i));
     }
+
+
 
 }
 
@@ -266,15 +254,8 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
 {
 
-    Manager::Get()->GetLogManager()->Log(_("A file has been opened"));
+    Manager::Get()->GetLogManager()->Log(_("A file has been opened ") + evt.GetEditor()->GetFilename());
 
-
-    if (evt.GetProject() == NULL)
-    {
-        waitingForProject = true;
-    }
-    else
-        InitializeTU();
 }
 
 // constructor
@@ -311,6 +292,7 @@ CXCodeCompleteResults* ClangComplete::getResults(cbEditor* editor, cbStyledTextC
 
 
 
+    CXTranslationUnit unit = units[name];
 
     int line = control->GetCurrentLine() +1;
     int column = control->GetColumn(control->GetCurrentPos()) +2;
@@ -387,25 +369,23 @@ void showResults(const std::vector<Result> sortedResults, cbStyledTextCtrl * con
 int ClangComplete::CodeComplete()
 {
 
+    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
+    cbStyledTextCtrl *control = editor->GetControl();
 
-    if (!fileProcessed)
+    wxString name = editor->GetFilename();
+    wxCharBuffer buffer = name.ToUTF8();
+    int pos   = control->GetCurrentPos();
+
+    if (units.count(name) == 0)
     {
-
-        Manager::Get()->GetLogManager()->Log(_("Not done"));
+        control->CallTipShow(pos,_("Not finished parsing yet"));
         return 0;
     }
 
 
 
-    cbEditor* editor = (cbEditor*)Manager::Get()->GetEditorManager()->GetActiveEditor();
-    cbStyledTextCtrl *control = editor->GetControl();
-
-
     for (int i = 1; i <= m_pImageList->GetImageCount(); i++)
         control->RegisterImage(i,m_pImageList->GetBitmap(i));
-
-
-    int pos  = control->GetCurrentPos();
 
 
     const int style = control->GetStyleAt(pos);
@@ -471,12 +451,13 @@ void ClangComplete::OnAttach()
 
     Manager::Get()->RegisterEventSink(cbEVT_EDITOR_OPEN,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnEditorOpen));
     Manager::Get()->RegisterEventSink(cbEVT_PROJECT_ACTIVATE,          new cbEventFunctor<ClangComplete, CodeBlocksEvent>(this, &ClangComplete::OnProjectOpen));
-    unitCreated = false;
+
     waitingForProject = false;
 
     fileProcessed = false;
 
 
+    index = clang_createIndex(0,0);
 
 
     m_pImageList = new wxImageList(16, 16);
@@ -576,9 +557,9 @@ void ClangComplete::OnRelease(bool appShutDown)
 {
     EditorHooks::UnregisterHook(hookId, true);
 
-    if (unitCreated)
-    {
-        clang_disposeTranslationUnit(unit);
+    for (std::map<wxString, CXTranslationUnit>::iterator iter = units.begin(); iter != units.end(); iter++)
+        clang_disposeTranslationUnit(iter->second);
+
+
         clang_disposeIndex(index);
-    }
 }

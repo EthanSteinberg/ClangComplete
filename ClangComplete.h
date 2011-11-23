@@ -23,21 +23,26 @@
 #include <codeblocks/editor_hooks.h>
 #include <clang-c/Index.h>
 class cbStyledTextCtrl;
+ class ProjectFile;
 class ClangComplete : public cbCodeCompletionPlugin
 {
     public:
     wxImageList* m_pImageList;
     int hookId;
-    CXTranslationUnit unit;
+
+    std::map<wxString , CXTranslationUnit> units;
+
+
     CXIndex index;
-    bool unitCreated;
+
         /** Constructor. */
         ClangComplete();
         /** Destructor. */
         virtual ~ClangComplete();
 
     bool waitingForProject;
-void InitializeTU();
+
+void InitializeTU(ProjectFile* file);
 void OnCodeComplete(wxCommandEvent &evt);
 void OnEditorOpen(CodeBlocksEvent& event);
 void OnProjectOpen(CodeBlocksEvent &evt);
@@ -48,6 +53,8 @@ void threadDone(wxCommandEvent &evt);
  int CodeComplete();
 
 bool fileProcessed;
+
+std::vector<cbEditor*> files;
 
 
 CXCodeCompleteResults* getResults(cbEditor* editor, cbStyledTextCtrl* control);
