@@ -2,7 +2,7 @@
 <CodeBlocks_plugin_manifest_file>
     <SdkVersion major="1" minor="11"  release="12" />
     <Plugin name="ClangComplete">
-        <Value title="CodeComplete" />
+        <Value title="ClangComplete" />
         <Value version="0.1" />
         <Value description="" />
         <Value author="" />

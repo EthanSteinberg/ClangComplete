@@ -26,8 +26,13 @@
 #include "Result.h"
 
 
+#include "myThread.h"
+
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
+
+
+int onCompleteId = wxNewId();
 
 static const char * cpp_keyword_xpm[] =
 {
@@ -57,79 +62,6 @@ static const char * cpp_keyword_xpm[] =
 
 
 
-DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, -1)
-
-DEFINE_EVENT_TYPE(wxEVT_MY_EVENT)
-
-
-void freeCommandLine(const char** args, int numOfTokens)
-{
-
-    for (int i = 0; i < numOfTokens; i++)
-    {
-
-        free((char*)args[i+1]);
-    }
-    free(args);
-
-
-}
-
-int threadDoneId = wxNewId();
-int onCompleteId = wxNewId();
-class myThread : public wxThread
-{
-    cbPlugin *handle;
-
-    CXIndex index;
-    wxCharBuffer buffer;
-    wxCharBuffer textBuf;
-    int length;
-    const char** args;
-    int numOfTokens;
-
-public:
-    myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const wxCharBuffer& _textBuf, int _length, const char** _args, int _numOfTokens)
-    {
-        handle = cb;
-
-        index = _index;
-        buffer = _buffer;
-        textBuf = _textBuf;
-        length = _length;
-        args = _args;
-        numOfTokens = _numOfTokens;
-
-    }
-
-protected:
-
-    CXTranslationUnit threadFunc()
-    {
-        CXUnsavedFile file = {buffer.data(), textBuf.data(), length};
-        CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, &file,1, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
-        int status = clang_reparseTranslationUnit(unit,1,&file, clang_defaultReparseOptions(unit));
-        CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, &file, 1 , clang_defaultCodeCompleteOptions());
-        clang_disposeCodeCompleteResults(results);
-
-        freeCommandLine(args,numOfTokens);
-
-        return unit;
-    }
-
-
-    virtual ExitCode Entry()
-    {
-
-
-
-        wxCommandEvent event(wxEVT_MY_EVENT, threadDoneId);
-        event.SetClientData(threadFunc());
-        wxPostEvent(handle,event);
-        return 0;
-
-    }
-};
 
 
 namespace
@@ -334,7 +266,7 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
 void ClangComplete::OnEditorOpen(CodeBlocksEvent &evt)
 {
 
-    // while (thread.IsAlive());
+    Manager::Get()->GetLogManager()->Log(_("A file has been opened"));
 
 
     if (evt.GetProject() == NULL)
