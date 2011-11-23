@@ -20,6 +20,7 @@
 				<Linker>
 					<Add option="`pkg-config --libs codeblocks`" />
 					<Add option="`wx-config --libs`" />
+					<Add library="/usr/lib/libclang.so" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="zip -j9 ClangComplete.zip manifest.xml" />
@@ -27,11 +28,7 @@
 				</ExtraCommands>
 			</Target>
 		</Build>
-		<Compiler>
-			<Add directory="../../../../usr/include/codeblocks" />
-		</Compiler>
 		<Linker>
-			<Add library="/usr/local/lib/libclang.so" />
 			<Add directory="../../../../usr/lib/codeblocks" />
 		</Linker>
 		<Unit filename="ClangComplete.cpp" />

@@ -35,6 +35,8 @@ void* myThread::Entry()
     transferData* data = new transferData;
     data->unit = threadFunc();
     data->filename = buffer;
+    data->id = id;
+    data->project = project;
 
 
     wxCommandEvent event(wxEVT_MY_EVENT, threadDoneId);

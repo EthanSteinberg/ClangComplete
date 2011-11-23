@@ -28,6 +28,7 @@
 
 #include "myThread.h"
 
+
 // Register the plugin with Code::Blocks.
 // We are using an anonymous namespace so we don't litter the global one.
 
@@ -77,18 +78,37 @@ END_EVENT_TABLE()
 
 void ClangComplete::threadDone(wxCommandEvent& evt)
 {
+
     fileProcessed = true;
 
 
     transferData* data = (transferData*)  evt.GetClientData();
+    int id = data->id+1;
+    cbProject *project = data->project;
+
     CXTranslationUnit unit = data->unit;
     wxString filename = wxString(data->filename,wxConvUTF8);
-
+free(data);
 
     Manager::Get()->GetLogManager()->Log(_("Processing done for ") + filename);
 
     units.insert(std::make_pair(filename,unit));
-    free(data);
+
+
+    if (id< project->GetFilesCount())
+    {
+        InitializeTU(project->GetFile(id),id,project);
+
+    }
+    else
+    {
+        fileProcessed = true;
+    }
+
+
+
+
+
 }
 
 
@@ -192,10 +212,10 @@ wxArrayString findCompilerIncludes(Compiler* compiler)
 
 
 
-void ClangComplete::InitializeTU(ProjectFile *file)
+void ClangComplete::InitializeTU(ProjectFile *file, int id,cbProject *project)
 {
 
-    cbProject *project = file->GetParentProject();
+//    cbProject *project = file->GetParentProject();
     ProjectBuildTarget *target = project->GetBuildTarget(0);
     Compiler *compiler = CompilerFactory::GetCompiler(target->GetCompilerID());
 
@@ -222,7 +242,7 @@ void ClangComplete::InitializeTU(ProjectFile *file)
 
 
 
-    myThread *thread = new myThread(this,index,buffer,args,numOfTokens);
+    myThread *thread = new myThread(this,index,buffer,args,numOfTokens,id,project);
     thread->Create();
     thread->Run();
 
@@ -236,10 +256,8 @@ void ClangComplete::OnProjectOpen(CodeBlocksEvent &evt)
     cbProject* project = evt.GetProject();
 
 
-    for (int i = 0; i < project->GetFilesCount(); i++)
-    {
-        InitializeTU(project->GetFile(i));
-    }
+        InitializeTU(project->GetFile(0),0,project);
+
 
 
 
@@ -375,7 +393,7 @@ int ClangComplete::CodeComplete()
     wxCharBuffer buffer = name.ToUTF8();
     int pos   = control->GetCurrentPos();
 
-    if (units.count(name) == 0)
+    if (!fileProcessed || units.count(name) == 0)
     {
         control->CallTipShow(pos,_("Not finished parsing yet"));
         return 0;
@@ -443,6 +461,8 @@ void ClangComplete::OnStuff(cbEditor *editor, wxScintillaEvent& event)
 
 void ClangComplete::OnAttach()
 {
+
+
 
     EditorHooks::HookFunctorBase* myhook = new EditorHooks::HookFunctor<ClangComplete>(this, &ClangComplete::OnStuff);
     hookId = EditorHooks::RegisterHook(myhook);

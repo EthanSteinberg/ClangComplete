@@ -13,12 +13,14 @@
 DECLARE_EVENT_TYPE(wxEVT_MY_EVENT, 52346)
 
 class cbPlugin;
-
+class cbProject;
 
 struct transferData
 {
     CXTranslationUnit unit;
     wxCharBuffer filename;
+    int id;
+    cbProject* project;
 };
 
 const int threadDoneId = 5634563;
@@ -32,9 +34,11 @@ class myThread : public wxThread
     wxCharBuffer buffer;
     const char** args;
     int numOfTokens;
+    int id;
+    cbProject* project;
 
 public:
-    myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const char** _args, int _numOfTokens)
+    myThread(cbPlugin *cb,CXIndex _index, const  wxCharBuffer& _buffer, const char** _args, int _numOfTokens,int _id, cbProject * _project)
     {
         handle = cb;
 
@@ -42,6 +46,8 @@ public:
         buffer = _buffer;
         args = _args;
         numOfTokens = _numOfTokens;
+        id = _id;
+        project = _project;
 
     }
 

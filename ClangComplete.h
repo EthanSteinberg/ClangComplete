@@ -24,6 +24,7 @@
 #include <clang-c/Index.h>
 class cbStyledTextCtrl;
  class ProjectFile;
+ class cbProject;
 class ClangComplete : public cbCodeCompletionPlugin
 {
     public:
@@ -42,7 +43,7 @@ class ClangComplete : public cbCodeCompletionPlugin
 
     bool waitingForProject;
 
-void InitializeTU(ProjectFile* file);
+void InitializeTU(ProjectFile* file,int id, cbProject* project);
 void OnCodeComplete(wxCommandEvent &evt);
 void OnEditorOpen(CodeBlocksEvent& event);
 void OnProjectOpen(CodeBlocksEvent &evt);

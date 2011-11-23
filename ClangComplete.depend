@@ -2325,7 +2325,7 @@
 	"wx/wxscintilla.h"
 	<wx/longlong.h>
 
-1322026396 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
+1322034349 source:/home/ethan/Programming/ClangComplete/ClangComplete.cpp
 	<sdk.h>
 	<configurationpanel.h>
 	"ClangComplete.h"
@@ -2374,15 +2374,462 @@
 	<clang-c/Index.h>
 	<wx/intl.h>
 
-1322025677 /home/ethan/Programming/ClangComplete/myThread.h
+1322036682 /home/ethan/Programming/ClangComplete/myThread.h
 	<wx/wxprec.h>
 	<wx/wx.h>
 	<clang-c/Index.h>
 
 1322012460 /home/ethan/Programming/ClangComplete/sharedMessages.h
 
-1322025153 source:/home/ethan/Programming/ClangComplete/myThread.cpp
+1322036642 source:/home/ethan/Programming/ClangComplete/myThread.cpp
 	"myThread.h"
 	<wx/thread.h>
 	<cbplugin.h>
+
+1321712059 /usr/local/include/codeblocks/sdk.h
+	"sdk_common.h"
+	"sdk_precomp.h"
+
+1321712059 /usr/local/include/codeblocks/sdk_common.h
+	<wx/wxprec.h>
+	"prep.h"
+	<wx/arrstr.h>
+	<wx/button.h>
+	<wx/checkbox.h>
+	<wx/checklst.h>
+	<wx/choice.h>
+	<wx/colordlg.h>
+	<wx/combobox.h>
+	<wx/confbase.h>
+	<wx/datetime.h>
+	<wx/dialog.h>
+	<wx/dir.h>
+	<wx/dynarray.h>
+	<wx/event.h>
+	<wx/file.h>
+	<wx/filename.h>
+	<wx/font.h>
+	<wx/frame.h>
+	<wx/fs_zip.h>
+	<wx/hashmap.h>
+	<wx/image.h>
+	<wx/imaglist.h>
+	<wx/intl.h>
+	<wx/list.h>
+	<wx/listbox.h>
+	<wx/listctrl.h>
+	<wx/log.h>
+	<wx/menu.h>
+	<wx/menuitem.h>
+	<wx/msgdlg.h>
+	<wx/notebook.h>
+	<wx/panel.h>
+	<wx/print.h>
+	<wx/process.h>
+	<wx/radiobox.h>
+	<wx/radiobut.h>
+	<wx/regex.h>
+	<wx/sizer.h>
+	<wx/socket.h>
+	<wx/spinctrl.h>
+	<wx/splitter.h>
+	<wx/stattext.h>
+	<wx/string.h>
+	<wx/textctrl.h>
+	<wx/thread.h>
+	<wx/timer.h>
+	<wx/toolbar.h>
+	<wx/treectrl.h>
+	<wx/txtstrm.h>
+	<wx/utils.h>
+	<wx/wfstream.h>
+	<wx/wxscintilla.h>
+	<wx/xrc/xmlres.h>
+	"settings.h"
+	"globals.h"
+	"sdk_events.h"
+	"cbexception.h"
+	"logger.h"
+	"editorbase.h"
+	"cbeditor.h"
+	"compileoptionsbase.h"
+	"compiletargetbase.h"
+	"projectbuildtarget.h"
+	"projectfile.h"
+	"cbplugin.h"
+	"cbproject.h"
+	"cbtool.h"
+	"cbworkspace.h"
+	"compilerfactory.h"
+	"compiler.h"
+	"workspaceloader.h"
+	"editorcolourset.h"
+	"pipedprocess.h"
+	"scrollingdialog.h"
+	"cbauibook.h"
+	"manager.h"
+	"configmanager.h"
+	"editormanager.h"
+	"logmanager.h"
+	"projectmanager.h"
+	"menuitemsmanager.h"
+	"scriptingmanager.h"
+	"toolsmanager.h"
+	"templatemanager.h"
+	"macrosmanager.h"
+	"pluginmanager.h"
+	"personalitymanager.h"
+	"uservarmanager.h"
+	"filemanager.h"
+	"xtra_res.h"
+	"safedelete.h"
+	"infowindow.h"
+	"licenses.h"
+
+1321712059 /usr/local/include/codeblocks/prep.h
+	<wx/version.h>
+
+1321712059 /usr/local/include/codeblocks/settings.h
+	<wx/msw/winundef.h>
+
+1321712059 /usr/local/include/codeblocks/globals.h
+	"settings.h"
+	<wx/string.h>
+	<wx/treectrl.h>
+	<wx/file.h>
+	<wx/filename.h>
+	<wx/intl.h>
+	<wx/msgdlg.h>
+	<wx/bitmap.h>
+
+1321712059 /usr/local/include/codeblocks/sdk_events.h
+	<wx/event.h>
+	"settings.h"
+	"blockallocated.h"
+
+1321712059 /usr/local/include/codeblocks/blockallocated.h
+	<vector>
+	<wx/file.h>
+	<wx/string.h>
+	<typeinfo>
+	"globals.h"
+	"prep.h"
+
+1321712059 /usr/local/include/codeblocks/cbexception.h
+	<wx/string.h>
+	<wx/log.h>
+	<csignal>
+
+1321712059 /usr/local/include/codeblocks/logger.h
+	<wx/string.h>
+	"settings.h"
+
+1321712059 /usr/local/include/codeblocks/editorbase.h
+	<wx/hashmap.h>
+	<wx/frame.h>
+	<wx/panel.h>
+	"globals.h"
+	"settings.h"
+	"cbexception.h"
+
+1321712059 /usr/local/include/codeblocks/cbeditor.h
+	<wx/hashmap.h>
+	<wx/datetime.h>
+	<wx/fontmap.h>
+	<wx/timer.h>
+	"settings.h"
+	"editorbase.h"
+	"printing_types.h"
+
+1321712059 /usr/local/include/codeblocks/printing_types.h
+	"settings.h"
+	<wx/print.h>
+
+1321712059 /usr/local/include/codeblocks/compileoptionsbase.h
+	"globals.h"
+	<wx/hashmap.h>
+
+1321712059 /usr/local/include/codeblocks/compiletargetbase.h
+	"compileoptionsbase.h"
+
+1321712059 /usr/local/include/codeblocks/projectbuildtarget.h
+	"settings.h"
+	"globals.h"
+	"compiletargetbase.h"
+	"projectfile.h"
+	<wx/dynarray.h>
+	<wx/filename.h>
+	<wx/list.h>
+	<wx/treectrl.h>
+	"blockallocated.h"
+
+1321712059 /usr/local/include/codeblocks/projectfile.h
+	<vector>
+	"settings.h"
+	"globals.h"
+	<wx/dynarray.h>
+	<wx/filename.h>
+	<wx/list.h>
+	<wx/treectrl.h>
+	"blockallocated.h"
+
+1321712059 /usr/local/include/codeblocks/cbplugin.h
+	<wx/arrstr.h>
+	<wx/event.h>
+	<wx/intl.h>
+	<wx/string.h>
+	"settings.h"
+	"globals.h"
+	"manager.h"
+	"pluginmanager.h"
+
+1321712059 /usr/local/include/codeblocks/manager.h
+	<map>
+	<vector>
+	<wx/msw/wrapwin.h>
+	<wx/event.h>
+	<wx/cmdline.h>
+	"settings.h"
+	"sdk_events.h"
+	"cbfunctor.h"
+
+1321712059 /usr/local/include/codeblocks/cbfunctor.h
+
+1321712059 /usr/local/include/codeblocks/pluginmanager.h
+	<vector>
+	<map>
+	<wx/dynarray.h>
+	"globals.h"
+	"settings.h"
+	"manager.h"
+
+1321712059 /usr/local/include/codeblocks/cbproject.h
+	<wx/datetime.h>
+	<wx/dynarray.h>
+	<wx/hashmap.h>
+	<wx/treectrl.h>
+	"settings.h"
+	"misctreeitemdata.h"
+	"compiletargetbase.h"
+	"cbplugin.h"
+	"projectbuildtarget.h"
+	<map>
+
+1321712059 /usr/local/include/codeblocks/misctreeitemdata.h
+	<wx/treectrl.h>
+
+1321712059 /usr/local/include/codeblocks/cbtool.h
+	<wx/string.h>
+
+1321712059 /usr/local/include/codeblocks/cbworkspace.h
+	<wx/string.h>
+	<wx/filename.h>
+	"globals.h"
+
+1321712059 /usr/local/include/codeblocks/compilerfactory.h
+	<wx/arrstr.h>
+	"compiler.h"
+	"settings.h"
+
+1321712059 /usr/local/include/codeblocks/compiler.h
+	<vector>
+	<map>
+	<wx/string.h>
+	<wx/filename.h>
+	<wx/dynarray.h>
+	"compileoptionsbase.h"
+	"compileroptions.h"
+
+1321712059 /usr/local/include/codeblocks/compileroptions.h
+	<wx/dynarray.h>
+	<wx/intl.h>
+	<wx/string.h>
+	"settings.h"
+
+1321712059 /usr/local/include/codeblocks/workspaceloader.h
+	"ibaseworkspaceloader.h"
+
+1321712059 /usr/local/include/codeblocks/ibaseworkspaceloader.h
+
+1321712059 /usr/local/include/codeblocks/editorcolourset.h
+	<wx/dynarray.h>
+	<wx/hashmap.h>
+	<wx/intl.h>
+	<wx/wxscintilla.h>
+	"settings.h"
+	"globals.h"
+
+1321712059 /usr/local/include/codeblocks/pipedprocess.h
+	"settings.h"
+	<wx/process.h>
+	<wx/txtstrm.h>
+	<wx/timer.h>
+
+1321712059 /usr/local/include/codeblocks/scrollingdialog.h
+	"wx/dialog.h"
+	"wx/propdlg.h"
+
+1321712059 /usr/local/include/codeblocks/cbauibook.h
+	<wx/aui/auibook.h>
+	<wx/dynarray.h>
+
+1321712059 /usr/local/include/codeblocks/configmanager.h
+	<wx/hashmap.h>
+	<wx/hashset.h>
+	"settings.h"
+	"globals.h"
+	"tinyxml/tinystr.h"
+	"tinyxml/tinyxml.h"
+	"manager.h"
+	"base64.h"
+	<map>
+	<set>
+
+1321712059 /usr/local/include/codeblocks/tinyxml/tinystr.h
+	<assert.h>
+	<string.h>
+
+1321712059 /usr/local/include/codeblocks/tinyxml/tinyxml.h
+	<ctype.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<assert.h>
+	<string>
+	<iostream>
+	<sstream>
+	"tinystr.h"
+
+1321712059 /usr/local/include/codeblocks/base64.h
+	<wx/defs.h>
+	<wx/string.h>
+	"settings.h"
+
+1321712059 /usr/local/include/codeblocks/editormanager.h
+	<wx/list.h>
+	<wx/treectrl.h>
+	<wx/hashmap.h>
+	"settings.h"
+	"manager.h"
+	"cbexception.h"
+	"printing_types.h"
+	"globals.h"
+
+1321712059 /usr/local/include/codeblocks/logmanager.h
+	"manager.h"
+	"logger.h"
+	<map>
+
+1321712059 /usr/local/include/codeblocks/projectmanager.h
+	"globals.h"
+	<wx/event.h>
+	<wx/dynarray.h>
+	<wx/hashmap.h>
+	<wx/treectrl.h>
+	"settings.h"
+	"manager.h"
+	"cbexception.h"
+
+1321712059 /usr/local/include/codeblocks/menuitemsmanager.h
+	"settings.h"
+	<wx/menu.h>
+
+1321712059 /usr/local/include/codeblocks/scriptingmanager.h
+	<map>
+	<set>
+	"cbexception.h"
+	"globals.h"
+	"settings.h"
+	"manager.h"
+	"menuitemsmanager.h"
+	<wx/intl.h>
+
+1321712059 /usr/local/include/codeblocks/toolsmanager.h
+	<wx/event.h>
+	"manager.h"
+	"menuitemsmanager.h"
+	"cbtool.h"
+
+1321712059 /usr/local/include/codeblocks/templatemanager.h
+	"settings.h"
+	"manager.h"
+	<wx/event.h>
+	"globals.h"
+
+1321712059 /usr/local/include/codeblocks/macrosmanager.h
+	"settings.h"
+	"manager.h"
+	<wx/regex.h>
+	<wx/filename.h>
+
+1321712059 /usr/local/include/codeblocks/personalitymanager.h
+	"settings.h"
+	"manager.h"
+	<wx/dynarray.h>
+
+1321712059 /usr/local/include/codeblocks/uservarmanager.h
+	"settings.h"
+	"manager.h"
+	"cbexception.h"
+	"globals.h"
+
+1321712059 /usr/local/include/codeblocks/filemanager.h
+	<wx/thread.h>
+	<wx/string.h>
+	<wx/log.h>
+	"backgroundthread.h"
+	<deque>
+	<memory>
+	<wx/file.h>
+	<wx/filename.h>
+	"configmanager.h"
+
+1321712059 /usr/local/include/codeblocks/backgroundthread.h
+	"safedelete.h"
+	<deque>
+	<list>
+	<algorithm>
+	<wx/timer.h>
+	"wx/thread.h"
+	"manager.h"
+
+1321712059 /usr/local/include/codeblocks/safedelete.h
+	<map>
+	<vector>
+	<list>
+	<deque>
+	<algorithm>
+
+1321712059 /usr/local/include/codeblocks/xtra_res.h
+	<wx/wxprec.h>
+	<wx/xrc/xmlres.h>
+	<wx/xrc/xh_dlg.h>
+	<wx/toolbar.h>
+
+1321712059 /usr/local/include/codeblocks/infowindow.h
+	<wx/event.h>
+	<wx/timer.h>
+	<wx/string.h>
+	<wx/popupwin.h>
+	"scrollingdialog.h"
+	<list>
+	<algorithm>
+
+1321712059 /usr/local/include/codeblocks/licenses.h
+
+1321712059 /usr/local/include/codeblocks/sdk_precomp.h
+	"sdk_common.h"
+
+1321712059 /usr/local/include/codeblocks/configurationpanel.h
+	"settings.h"
+	"scrollingdialog.h"
+	<wx/panel.h>
+	<wx/string.h>
+
+1321712059 /usr/local/include/codeblocks/editor_hooks.h
+	"settings.h"
+
+1321712059 /usr/local/include/codeblocks/cbstyledtextctrl.h
+	"wx/wxscintilla.h"
+	<wx/longlong.h>
 
