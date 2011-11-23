@@ -121,11 +121,10 @@ const char** generateCommandLine(wxString command, int &numOfTokens)
 
     wxStringTokenizer tokenizer(command);
     numOfTokens = tokenizer.CountTokens();
-    char const** args = new  const char*[1+numOfTokens];
+    char const** args = new  const char*[numOfTokens];
 
-    args[0] = "-I/usr/lib/clang/2.9/include";
 
-    int i = 1;
+    int i = 0;
     while (tokenizer.HasMoreTokens())
     {
         wxString tokenString = tokenizer.GetNextToken();

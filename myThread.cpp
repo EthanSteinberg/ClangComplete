@@ -11,7 +11,7 @@ void freeCommandLine(const char** args, int numOfTokens)
     for (int i = 0; i < numOfTokens; i++)
     {
 
-        free((char*)args[i+1]);
+        free((char*)args[i]);
     }
     free(args);
 
@@ -20,7 +20,7 @@ void freeCommandLine(const char** args, int numOfTokens)
 
 CXTranslationUnit myThread::threadFunc()
 {
-    CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens+1, NULL,0, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
+    CXTranslationUnit unit = clang_parseTranslationUnit(index, buffer.data(),args,numOfTokens, NULL,0, CXTranslationUnit_PrecompiledPreamble | CXTranslationUnit_CacheCompletionResults | CXTranslationUnit_CXXPrecompiledPreamble);
     int status = clang_reparseTranslationUnit(unit,0, NULL, clang_defaultReparseOptions(unit));
     CXCodeCompleteResults* results= clang_codeCompleteAt(unit,buffer.data(),1,1, NULL, 0, clang_defaultCodeCompleteOptions());
     clang_disposeCodeCompleteResults(results);

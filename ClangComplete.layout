@@ -2,7 +2,7 @@
 <CodeBlocks_layout_file>
 	<ActiveTarget name="default" />
 	<File name="ClangComplete.cpp" open="1" top="1" tabpos="2">
-		<Cursor position="6045" topLine="66" />
+		<Cursor position="2863" topLine="96" />
 	</File>
 	<File name="ClangComplete.h" open="1" top="0" tabpos="1">
 		<Cursor position="1099" topLine="45" />
@@ -13,10 +13,13 @@
 	<File name="Result.h" open="0" top="0" tabpos="3">
 		<Cursor position="158" topLine="0" />
 	</File>
-	<File name="myThread.cpp" open="1" top="0" tabpos="8">
-		<Cursor position="348" topLine="0" />
+	<File name="manifest.xml" open="1" top="0" tabpos="4">
+		<Cursor position="0" topLine="0" />
 	</File>
-	<File name="myThread.h" open="1" top="0" tabpos="9">
-		<Cursor position="203" topLine="0" />
+	<File name="myThread.cpp" open="1" top="0" tabpos="5">
+		<Cursor position="406" topLine="0" />
+	</File>
+	<File name="myThread.h" open="1" top="0" tabpos="3">
+		<Cursor position="0" topLine="0" />
 	</File>
 </CodeBlocks_layout_file>

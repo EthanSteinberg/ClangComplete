@@ -39,6 +39,8 @@
 		<Unit filename="Result.cpp" />
 		<Unit filename="Result.h" />
 		<Unit filename="manifest.xml" />
+		<Unit filename="myThread.cpp" />
+		<Unit filename="myThread.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
